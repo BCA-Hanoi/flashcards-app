@@ -117,12 +117,30 @@ elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            body { margin:0; padding:0; background:black; }
+            /* 전체 페이지를 검은 배경으로, 여백 제거 */
+            .block-container {
+                padding-top: 0rem;
+                padding-bottom: 0rem;
+                padding-left: 0rem;
+                padding-right: 0rem;
+                margin: 0 auto;
+                max-width: 100%;
+            }
+            header, footer, .stToolbar {
+                visibility: hidden;
+                height: 0px;
+            }
+            body {
+                background-color: black;
+                margin: 0;
+                padding: 0;
+            }
             .present-img {
-                display:flex;
-                justify-content:center;
-                align-items:center;
-                height:100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;   /* 화면 세로를 꽉 채움 */
+                width: 100vw;    /* 화면 가로를 꽉 채움 */
             }
             .present-img img {
                 max-height: 95vh;
@@ -137,9 +155,8 @@ elif st.session_state.mode == "present":
 
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
-        st.markdown("<div class='present-img'>", unsafe_allow_html=True)
-        st.image(url, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
+
 
         # 간단한 네비게이션 버튼 (추후 JS 이벤트 추가 가능)
         cols = st.columns([1, 1, 1])
