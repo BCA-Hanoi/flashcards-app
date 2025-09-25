@@ -118,47 +118,29 @@ elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            html, body, .block-container {
-                height: 100%;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: black;
-                overflow: hidden;
-            }
-            header, footer, .stToolbar {visibility: hidden; height: 0;}
+            .block-container {padding:0; margin:0; max-width:100%;}
+            header, footer, .stToolbar {visibility:hidden; height:0;}
+            body {background:black; margin:0; padding:0;}
             .present-img {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 80vh;
-                width: 100vw;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                height:85vh;
+                width:100vw;
             }
             .present-img img {
-                max-height: 100%;
-                max-width: 100%;
-                object-fit: contain;
-                border-radius: 15px;
-                box-shadow: 0 0 30px rgba(255,255,255,0.3);
+                max-height:85vh;
+                max-width:90vw;
+                border-radius:15px;
+                box-shadow:0 0 40px rgba(255,255,255,0.3);
             }
-            /* 버튼 박스 */
-            .present-controls {
-                display: flex;
-                justify-content: center;   /* 가로 중앙 */
-                align-items: center;       /* 세로 중앙 */
-                gap: 30px;                 /* 버튼 간격 */
-                margin-top: 20px;
-            }
-            .present-controls button {
-                font-size: 18px;
-                padding: 10px 25px;
-                border-radius: 8px;
-                border: none;
-                background: #262730;
-                color: white;
-                cursor: pointer;
-            }
-            .present-controls button:hover {
-                background: #ff4b4b;
+            /* 버튼 컨테이너 */
+            .button-container {
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                gap:25px;         /* 버튼 사이 간격 */
+                margin-top:10px;
             }
         </style>
         """,
@@ -169,24 +151,21 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼 중앙 배치
-        col = st.container()
-        with col:
-            st.markdown("<div class='present-controls'>", unsafe_allow_html=True)
+        # ✅ 여기서 st.columns 없앰!
+        st.markdown("<div class='button-container'>", unsafe_allow_html=True)
 
-            c1, c2, c3 = st.columns([1,1,1], gap="large")
-            with c1:
-                if st.button("◀ Prev"):
-                    st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-                    st.rerun()
-            with c2:
-                if st.button("Exit"):
-                    st.session_state.mode = "gallery"
-                    st.rerun()
-            with c3:
-                if st.button("Next ▶"):
-                    st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-                    st.rerun()
+        c1, c2, c3 = st.columns([1,1,1])
+        with c2:  # 가운데 컬럼에만 버튼 그룹 넣기
+            if st.button("◀ Prev"):
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
+            if st.button("Exit"):
+                st.session_state.mode = "gallery"
+                st.rerun()
+            if st.button("Next ▶"):
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
 
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
