@@ -114,6 +114,9 @@ elif st.session_state.mode == "gallery":
 # ==============================
 # 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
 # ==============================
+# ==============================
+# 3단계: Presentation 전체화면 모드
+# ==============================
 elif st.session_state.mode == "present":
     st.markdown(
         """
@@ -125,26 +128,13 @@ elif st.session_state.mode == "present":
                 display:flex;
                 justify-content:center;
                 align-items:center;
-                height:85vh;
-                width:100vw;
+                height:90vh;   /* 이미지 영역 */
             }
             .present-img img {
-                max-height:85vh;
+                max-height:90vh;
                 max-width:90vw;
                 border-radius:15px;
                 box-shadow:0 0 40px rgba(255,255,255,0.3);
-            }
-            /* 버튼 정렬 */
-            .button-row {
-                display:flex;
-                justify-content:center;
-                gap:40px;   /* 버튼 간격 */
-                margin-top:20px;
-            }
-            .stButton > button {
-                font-size:18px;
-                padding:10px 20px;
-                border-radius:8px;
             }
         </style>
         """,
@@ -152,26 +142,22 @@ elif st.session_state.mode == "present":
     )
 
     if st.session_state.cards:
-        # 현재 이미지
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-# 버튼 가로 정렬 (Streamlit + CSS)
-# ==============================
-col1, col2, col3 = st.columns([1,1,1])
+        # 버튼은 present 모드에서만 표시
+        col1, col2, col3 = st.columns([1,1,1])
+        with col1:
+            if st.button("◀ Prev", use_container_width=True):
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
 
-with col1:
-    if st.button("◀ Prev", use_container_width=True):
-        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-        st.rerun()
+        with col2:
+            if st.button("Exit", use_container_width=True):
+                st.session_state.mode = "gallery"
+                st.rerun()
 
-with col2:
-    if st.button("Exit", use_container_width=True):
-        st.session_state.mode = "gallery"
-        st.rerun()
-
-with col3:
-    if st.button("Next ▶", use_container_width=True):
-        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.rerun()
-
+        with col3:
+            if st.button("Next ▶", use_container_width=True):
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
