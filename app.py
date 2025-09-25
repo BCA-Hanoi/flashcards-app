@@ -118,9 +118,24 @@ elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            .block-container {padding:0; margin:0; max-width:100%;}
-            header, footer, .stToolbar {visibility:hidden; height:0;}
-            body {background:black; margin:0; padding:0;}
+            /* Streamlit 기본 마진 제거 */
+            .block-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            main {
+                padding-top: 0 !important;
+            }
+            header, footer, .stToolbar {
+                visibility: hidden;
+                height: 0;
+            }
+            body {
+                background:black;
+                margin:0;
+                padding:0;
+            }
             .present-container {
                 display:flex;
                 flex-direction:column;
@@ -150,12 +165,6 @@ elif st.session_state.mode == "present":
                 gap:20px;
                 margin:10px 0 20px 0;
             }
-            .present-buttons button {
-                font-size:18px;
-                padding:12px 24px;
-                border-radius:8px;
-                font-weight:bold;
-            }
         </style>
         """,
         unsafe_allow_html=True
@@ -164,11 +173,9 @@ elif st.session_state.mode == "present":
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
 
-        # 이미지 영역
         st.markdown("<div class='present-container'>", unsafe_allow_html=True)
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼 영역 (Streamlit 버튼)
         col1, col2, col3 = st.columns([1,1,1])
         with col1:
             if st.button("◀ Prev"):
@@ -184,5 +191,6 @@ elif st.session_state.mode == "present":
                 st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
