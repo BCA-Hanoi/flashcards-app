@@ -126,14 +126,30 @@ elif st.session_state.mode == "present":
                 overflow: hidden;
             }
             header, footer, .stToolbar {visibility: hidden; height: 0;}
+            .present-container {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                width: 100vw;
+            }
+            .present-img {
+                flex: 1;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
             .present-img img {
-                max-height: 90vh;   /* 화면 기준 세로 맞춤 */
+                max-height: 85vh;   /* 이미지가 화면 세로에 맞게 */
                 max-width: 90vw;    /* 가로는 비율 유지 */
                 object-fit: contain;
                 border-radius: 15px;
                 box-shadow: 0 0 30px rgba(255,255,255,0.3);
-                display: block;
-                margin: auto;
+            }
+            .present-controls {
+                text-align: center;
+                margin: 10px;
             }
         </style>
         """,
@@ -143,10 +159,13 @@ elif st.session_state.mode == "present":
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
 
-        # ✅ Streamlit의 기본 이미지 위젯 사용
-        st.image(url, use_container_width=False)
+        # 전체 컨테이너
+        st.markdown("<div class='present-container'>", unsafe_allow_html=True)
 
-        # ✅ 버튼 (중앙 정렬)
+        # 이미지
+        st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
+
+        # 버튼
         col1, col2, col3 = st.columns([1,1,1])
         with col1:
             if st.button("◀ Prev"):
@@ -161,4 +180,4 @@ elif st.session_state.mode == "present":
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
 
-
+        st.markdown("</div>", unsafe_allow_html=True)
