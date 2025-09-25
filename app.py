@@ -144,15 +144,21 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}' id='flashcard'></div>", unsafe_allow_html=True)
 
-        # JS 클릭 감지
-        clicked = streamlit_js_eval(js_expressions="""
-            new Promise((resolve) => {
-                const img = document.getElementById("flashcard");
-                if (img) {
-                    img.onclick = () => resolve(true);
-                }
-            })
-        """, key="img_click")
+        # JS → 클릭하면 true 반환
+        clicked = streamlit_js_eval(
+            js_expressions="""
+                (function(){
+                    const img = document.getElementById("flashcard");
+                    if (img) {
+                        img.onclick = function() {
+                            window.streamlitClicked = true;
+                        }
+                    }
+                    return window.streamlitClicked || false;
+                })()
+            """,
+            key="img_click"
+        )
 
         if clicked:
             st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
