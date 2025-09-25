@@ -130,28 +130,25 @@ elif st.session_state.mode == "present":
                 cursor:pointer;
             }
         </style>
+
+        <script>
+        document.addEventListener("click", function() {
+            window.parent.postMessage({isStreamlitMessage:true, type:"nextCard"}, "*");
+        });
+        </script>
         """,
         unsafe_allow_html=True
     )
 
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
+        st.markdown(f"<div class='present-img'><img src='{url}' /></div>", unsafe_allow_html=True)
 
-        # HTML 클릭 → query param nav=next 추가
-        st.markdown(
-            f"""
-            <div class='present-img'>
-                <a href='?nav=next'>
-                    <img src='{url}' />
-                </a>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    # 클릭 이벤트 처리
+    if "nav_event" not in st.session_state:
+        st.session_state.nav_event = None
 
-    # 쿼리스트링(nav) 처리
-    nav = st.query_params.get("nav", None)
-    if nav == "next":
+    if st.session_state.nav_event == "nextCard":
         st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.query_params.clear()
+        st.session_state.nav_event = None
         st.rerun()
