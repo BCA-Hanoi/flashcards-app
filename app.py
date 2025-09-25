@@ -144,21 +144,8 @@ elif st.session_state.mode == "present":
                 display: flex;
                 justify-content: center;   /* 가운데 정렬 */
                 align-items: center;
-                gap: 10px;                 /* 버튼 간격 좁게 */
+                gap: 10px;                 /* 버튼 간격 */
                 margin-top: 10px;
-            }
-            .present-controls button {
-                background: #444;
-                color: white;
-                font-size: 16px;
-                font-weight: bold;
-                padding: 8px 20px;
-                border-radius: 6px;
-                border: none;
-                cursor: pointer;
-            }
-            .present-controls button:hover {
-                background: #666;
             }
         </style>
         """,
@@ -169,29 +156,17 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼 컨트롤 (가운데 정렬)
-        st.markdown(
-            """
-            <div class="present-controls">
-                <form action="?nav=prev" method="get"><button type="submit">◀ Prev</button></form>
-                <form action="?nav=exit" method="get"><button type="submit">Exit</button></form>
-                <form action="?nav=next" method="get"><button type="submit">Next ▶</button></form>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # 쿼리스트링(nav) 처리
-    nav = st.query_params.get("nav", None)
-    if nav == "next":
-        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "prev":
-        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "exit":
-        st.session_state.mode = "gallery"
-        st.query_params.clear()
-        st.rerun()
+        # 버튼 컨트롤 (Streamlit 버튼 사용)
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("◀ Prev"):
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
+        with col2:
+            if st.button("Exit"):
+                st.session_state.mode = "gallery"
+                st.rerun()
+        with col3:
+            if st.button("Next ▶"):
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
