@@ -6,7 +6,7 @@ from google.oauth2 import service_account
 # Google Drive 연결 설정 (Secrets 사용)
 # ==============================
 creds = service_account.Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],   # [gcp_service_account] 블록 전체
+    st.secrets["gcp_service_account"],   # [gcp_service_account] 블록 전체를 읽음
     scopes=["https://www.googleapis.com/auth/drive.readonly"]
 )
 
@@ -32,7 +32,6 @@ def get_files_from_folder(folder_id):
             break
     return files
 
-
 # ==============================
 # Streamlit UI 설정
 # ==============================
@@ -45,37 +44,12 @@ if "cards" not in st.session_state:
 if "current" not in st.session_state:
     st.session_state.current = 0
 
-
 # ==============================
 # 1단계: 단어 입력 화면
 # ==============================
 if st.session_state.mode == "home":
-    st.markdown(
-        """
-        <style>
-            body {background-color:black;}
-            .title {text-align:center; font-size:36px; font-weight:bold; color:white; margin-top:15%;}
-            .subtitle {text-align:center; font-size:16px; color:gray;}
-            .stTextInput {
-                display: flex;
-                justify-content: center;
-            }
-            .stTextInput > div {
-                width: 70% !important;
-            }
-            .stTextInput input {
-                font-size:20px; 
-                padding:10px; 
-                border-radius:25px;
-                width: 100% !important;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown("<div class='title'>BCA Flashcards</div>", unsafe_allow_html=True)
-    st.markdown("<div class='subtitle'>Type words (comma separated), then press Enter.</div>", unsafe_allow_html=True)
+    st.title("BCA Flashcards")
+    st.subheader("Type words (comma separated), then press Enter.")
 
     words = st.text_input(
         "Flashcards",
@@ -87,7 +61,7 @@ if st.session_state.mode == "home":
     if words:
         all_files = get_files_from_folder(FOLDER_ID)
 
-        # ✅ 디버그 출력
+        # 디버그 확인
         st.write("DEBUG files:", all_files[:5])
 
         file_map = {
@@ -101,10 +75,8 @@ if st.session_state.mode == "home":
         selected = []
         for w in [w.strip().lower() for w in words.split(",")]:
             if w in file_map:
-                # ✅ URL 방식 변경
-                image_url = f"https://drive.google.com/uc?export=view&id={file_map[w]}"
-                # 또는 썸네일 모드 사용: f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000"
-                selected.append(image_url)
+                # ✅ URL 생성 방식 수정
+                selected.append(f"https://drive.google.com/uc?export=view&id={file_map[w]}")
 
         if selected:
             st.session_state.cards = selected
@@ -112,7 +84,6 @@ if st.session_state.mode == "home":
             st.rerun()
         else:
             st.warning("⚠️ No matching flashcards found. Try again.")
-
 
 # ==============================
 # 2단계: 갤러리 미리보기 화면
@@ -122,13 +93,13 @@ elif st.session_state.mode == "gallery":
     st.subheader("Preview your flashcards below.")
 
     if st.session_state.cards:
-        cols = st.columns(5)  # 5열 갤러리
+        cols = st.columns(3)
         for i, url in enumerate(st.session_state.cards):
-            with cols[i % 5]:
-                st.write("Image URL:", url)  # ✅ URL 디버그 출력
-                st.image(url, width=120)
+            with cols[i % 3]:
+                st.write(f"Image URL: {url}")
+                st.image(url, width=200)
 
-        if st.button("Presentation ▶"):
+        if st.button("Presentation ▶", key="present_btn"):
             st.session_state.mode = "present"
             st.session_state.current = 0
             st.rerun()
@@ -137,7 +108,6 @@ elif st.session_state.mode == "gallery":
         if st.button("Back to Home"):
             st.session_state.mode = "home"
             st.rerun()
-
 
 # ==============================
 # 3단계: Presentation 전체화면 모드
@@ -170,37 +140,14 @@ elif st.session_state.mode == "present":
         st.image(url, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown(
-            """
-            <script>
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowRight') {
-                    window.parent.postMessage({isStreamlitMessage: true, type: 'nextCard'}, '*');
-                } else if (event.key === 'ArrowLeft') {
-                    window.parent.postMessage({isStreamlitMessage: true, type: 'prevCard'}, '*');
-                } else if (event.key === 'Escape') {
-                    window.parent.postMessage({isStreamlitMessage: true, type: 'exit'}, '*');
-                }
-            });
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if "nav_event" not in st.session_state:
-            st.session_state.nav_event = None
-
-        if st.session_state.nav_event == "nextCard":
+        if st.button("Next ▶"):
             st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-            st.session_state.nav_event = None
             st.rerun()
-        elif st.session_state.nav_event == "prevCard":
+        if st.button("◀ Previous"):
             st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-            st.session_state.nav_event = None
             st.rerun()
-        elif st.session_state.nav_event == "exit":
+        if st.button("Exit"):
             st.session_state.mode = "gallery"
-            st.session_state.nav_event = None
             st.rerun()
     else:
         st.warning("⚠️ No cards to present. Returning to Gallery...")
