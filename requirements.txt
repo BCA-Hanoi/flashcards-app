@@ -1,5 +1,6 @@
-streamlit>=1.32
-google-api-python-client>=2.133
-google-auth>=2.29
-google-auth-httplib2>=0.2.0
-streamlit-js-eval
+streamlit
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+streamlit-js-eval  
