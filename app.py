@@ -122,8 +122,6 @@ elif st.session_state.mode == "gallery":
         <style>
             .title {text-align:center; font-size:28px; font-weight:bold; color:white; margin-top:40px;}
             .subtitle {text-align:center; font-size:16px; color:gray; margin-bottom:20px;}
-            .gallery {display:flex; flex-wrap:wrap; justify-content:center; gap:15px; max-width:70%; margin:auto;}
-            .gallery img {width:120px; height:auto; border-radius:10px; box-shadow:0 0 10px rgba(255,255,255,0.2);}
             .btn-center {text-align:center; margin-top:30px;}
             .btn-present {background:#ff4b4b; color:white; font-size:18px; font-weight:bold; padding:12px 40px; border-radius:8px;}
         </style>
@@ -135,10 +133,17 @@ elif st.session_state.mode == "gallery":
     st.markdown("<div class='subtitle'>Preview your flashcards below.</div>", unsafe_allow_html=True)
 
     if st.session_state.cards:
-        st.markdown("<div class='gallery'>", unsafe_allow_html=True)
-        for url in st.session_state.cards:
-            st.image(url, width=120)
-        st.markdown("</div>", unsafe_allow_html=True)
+        # ✅ Streamlit 레이아웃 기반 (한 줄에 5개 카드)
+        num_cols = 5
+        rows = (len(st.session_state.cards) + num_cols - 1) // num_cols
+
+        for r in range(rows):
+            cols = st.columns(num_cols)
+            for i in range(num_cols):
+                idx = r * num_cols + i
+                if idx < len(st.session_state.cards):
+                    with cols[i]:
+                        st.image(st.session_state.cards[idx], width=120)
 
         st.markdown("<div class='btn-center'>", unsafe_allow_html=True)
         if st.button("Presentation ▶", key="present_btn"):
@@ -146,6 +151,7 @@ elif st.session_state.mode == "gallery":
             st.session_state.current = 0
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
     else:
         st.warning("⚠️ No cards loaded. Please go back and try again.")
         if st.button("Back to Home"):
