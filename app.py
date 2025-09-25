@@ -140,12 +140,25 @@ elif st.session_state.mode == "present":
                 border-radius: 15px;
                 box-shadow: 0 0 30px rgba(255,255,255,0.3);
             }
+            /* 버튼 영역 */
             .present-controls {
                 display: flex;
                 justify-content: center;   /* 가운데 정렬 */
                 align-items: center;
-                gap: 10px;                 /* 버튼 간격 */
-                margin-top: 10px;
+                gap: 20px;                 /* 버튼 간격 */
+                margin-top: 15px;
+            }
+            .present-controls button {
+                font-size: 18px;
+                padding: 8px 20px;
+                border-radius: 8px;
+                border: none;
+                background: #262730;
+                color: white;
+                cursor: pointer;
+            }
+            .present-controls button:hover {
+                background: #ff4b4b;
             }
         </style>
         """,
@@ -156,17 +169,23 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼 컨트롤 (Streamlit 버튼 사용)
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            if st.button("◀ Prev"):
+        # 버튼 컨트롤 (HTML + Streamlit 이벤트 연결)
+        col = st.container()
+        with col:
+            st.markdown("<div class='present-controls'>", unsafe_allow_html=True)
+
+            b1 = st.button("◀ Prev", key="prev_btn")
+            b2 = st.button("Exit", key="exit_btn")
+            b3 = st.button("Next ▶", key="next_btn")
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            if b1:
                 st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
                 st.rerun()
-        with col2:
-            if st.button("Exit"):
+            elif b2:
                 st.session_state.mode = "gallery"
                 st.rerun()
-        with col3:
-            if st.button("Next ▶"):
+            elif b3:
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
