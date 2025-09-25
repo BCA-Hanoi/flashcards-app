@@ -121,19 +121,40 @@ elif st.session_state.mode == "present":
             .block-container {padding:0; margin:0; max-width:100%;}
             header, footer, .stToolbar {visibility:hidden; height:0;}
             body {background:black; margin:0; padding:0;}
-            .present-img {
+            .present-container {
                 display:flex;
+                flex-direction:column;
                 justify-content:center;
                 align-items:center;
                 height:100vh;
                 width:100vw;
+                background:black;
+            }
+            .present-img {
+                flex: 1 1 auto;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                max-height:85vh;   /* 버튼 포함해서 화면 넘지 않도록 제한 */
             }
             .present-img img {
-                max-height:95vh;
+                max-height:100%;
                 max-width:95vw;
                 border-radius:15px;
                 box-shadow:0 0 40px rgba(255,255,255,0.3);
-                cursor:pointer;
+            }
+            .present-buttons {
+                flex: 0 0 auto;
+                display:flex;
+                justify-content:center;
+                gap:20px;
+                margin:10px 0 20px 0;
+            }
+            .present-buttons button {
+                font-size:18px;
+                padding:12px 24px;
+                border-radius:8px;
+                font-weight:bold;
             }
         </style>
         """,
@@ -142,25 +163,26 @@ elif st.session_state.mode == "present":
 
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
-        st.markdown(f"<div class='present-img'><img src='{url}' id='flashcard'></div>", unsafe_allow_html=True)
 
-        # JS → 클릭하면 true 반환
-        clicked = streamlit_js_eval(
-            js_expressions="""
-                (function(){
-                    const img = document.getElementById("flashcard");
-                    if (img) {
-                        img.onclick = function() {
-                            window.streamlitClicked = true;
-                        }
-                    }
-                    return window.streamlitClicked || false;
-                })()
-            """,
-            key="img_click"
-        )
+        # 이미지 영역
+        st.markdown("<div class='present-container'>", unsafe_allow_html=True)
+        st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        if clicked:
-            st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-            st.rerun()
+        # 버튼 영역 (Streamlit 버튼)
+        col1, col2, col3 = st.columns([1,1,1])
+        with col1:
+            if st.button("◀ Prev"):
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
+        with col2:
+            if st.button("Exit"):
+                st.session_state.mode = "gallery"
+                st.rerun()
+        with col3:
+            if st.button("Next ▶"):
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
