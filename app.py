@@ -117,56 +117,38 @@ elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            .block-container {
-                padding: 0;
-                margin: 0;
-                max-width: 100%;
-            }
-            header, footer, .stToolbar {
-                visibility: hidden;
-                height: 0px;
-            }
-            body {
-                background-color: black;
-                margin: 0;
-                padding: 0;
-            }
+            .block-container { padding:0; margin:0; max-width:100%; }
+            header, footer, .stToolbar { visibility:hidden; height:0px; }
+            body { background:black; margin:0; padding:0; }
             .present-img {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                width: 100vw;
+                display:flex; justify-content:center; align-items:center;
+                height:100vh; width:100vw;
             }
             .present-img img {
-                max-height: 95vh;
-                max-width: 95vw;
-                border-radius: 15px;
-                box-shadow: 0 0 40px rgba(255,255,255,0.3);
+                max-height:95vh; max-width:95vw; border-radius:15px;
+                box-shadow:0 0 40px rgba(255,255,255,0.3);
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-    from streamlit_js_eval import streamlit_js_eval
-
-    # 현재 이미지 표시
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 키 이벤트 감지
-        key = streamlit_js_eval(js_expressions="event.key", key="js_key", events="keydown")
+    from streamlit_js_eval import streamlit_js_eval
+    key = streamlit_js_eval(js_expressions="event.key", events="keydown", key="nav_keys")
 
-        if key:
-            if key in ["Enter", " ", "ArrowRight"]:
-                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-                st.rerun()
-            elif key == "ArrowLeft":
-                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-                st.rerun()
-            elif key == "Escape":
-                st.session_state.mode = "gallery"
-                st.rerun()
+    if key:
+        if key in ["Enter", " ", "ArrowRight"]:
+            st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+            st.rerun()
+        elif key == "ArrowLeft":
+            st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+            st.rerun()
+        elif key == "Escape":
+            st.session_state.mode = "gallery"
+            st.rerun()
+
 
