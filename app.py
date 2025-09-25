@@ -189,3 +189,4 @@ elif st.session_state.mode == "present":
             elif b3:
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
+
