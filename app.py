@@ -145,39 +145,28 @@ elif st.session_state.mode == "present":
                 box-shadow: 0 0 40px rgba(255,255,255,0.3);
             }
         </style>
-
-        <script>
-        document.addEventListener("keydown", function(event) {
-            if (event.key === "Enter" || event.key === " " || event.key === "ArrowRight") {
-                fetch("/?nav=next").then(() => window.location.reload());
-            } else if (event.key === "ArrowLeft") {
-                fetch("/?nav=prev").then(() => window.location.reload());
-            } else if (event.key === "Escape") {
-                fetch("/?nav=exit").then(() => window.location.reload());
-            }
-        });
-        </script>
         """,
         unsafe_allow_html=True
     )
+
+    from streamlit_js_eval import streamlit_js_eval
 
     # 현재 이미지 표시
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-    # 쿼리스트링(nav) 처리
-    nav = st.query_params.get("nav", None)
-    if nav == "next":
-        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "prev":
-        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "exit":
-        st.session_state.mode = "gallery"
-        st.query_params.clear()
-        st.rerun()
+        # 키 이벤트 감지
+        key = streamlit_js_eval(js_expressions="event.key", key="js_key", events="keydown")
+
+        if key:
+            if key in ["Enter", " ", "ArrowRight"]:
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
+            elif key == "ArrowLeft":
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
+            elif key == "Escape":
+                st.session_state.mode = "gallery"
+                st.rerun()
 
