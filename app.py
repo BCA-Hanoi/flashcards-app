@@ -130,7 +130,7 @@ elif st.session_state.mode == "present":
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                height: 85vh;
+                height: 80vh;
                 width: 100vw;
             }
             .present-img img {
@@ -140,17 +140,17 @@ elif st.session_state.mode == "present":
                 border-radius: 15px;
                 box-shadow: 0 0 30px rgba(255,255,255,0.3);
             }
-            /* 버튼 영역 */
+            /* 버튼 박스 */
             .present-controls {
                 display: flex;
-                justify-content: center;   /* 가운데 정렬 */
-                align-items: center;
-                gap: 20px;                 /* 버튼 간격 */
-                margin-top: 15px;
+                justify-content: center;   /* 가로 중앙 */
+                align-items: center;       /* 세로 중앙 */
+                gap: 30px;                 /* 버튼 간격 */
+                margin-top: 20px;
             }
             .present-controls button {
                 font-size: 18px;
-                padding: 8px 20px;
+                padding: 10px 25px;
                 border-radius: 8px;
                 border: none;
                 background: #262730;
@@ -169,24 +169,24 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼 컨트롤 (HTML + Streamlit 이벤트 연결)
+        # 버튼 중앙 배치
         col = st.container()
         with col:
             st.markdown("<div class='present-controls'>", unsafe_allow_html=True)
 
-            b1 = st.button("◀ Prev", key="prev_btn")
-            b2 = st.button("Exit", key="exit_btn")
-            b3 = st.button("Next ▶", key="next_btn")
+            c1, c2, c3 = st.columns([1,1,1], gap="large")
+            with c1:
+                if st.button("◀ Prev"):
+                    st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                    st.rerun()
+            with c2:
+                if st.button("Exit"):
+                    st.session_state.mode = "gallery"
+                    st.rerun()
+            with c3:
+                if st.button("Next ▶"):
+                    st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                    st.rerun()
 
             st.markdown("</div>", unsafe_allow_html=True)
-
-            if b1:
-                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-                st.rerun()
-            elif b2:
-                st.session_state.mode = "gallery"
-                st.rerun()
-            elif b3:
-                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-                st.rerun()
 
