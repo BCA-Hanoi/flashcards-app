@@ -123,54 +123,17 @@ elif st.session_state.mode == "present":
                 margin: 0 !important;
                 padding: 0 !important;
                 background: black;
-                overflow: hidden; /* ✅ 스크롤 제거 */
+                overflow: hidden;
             }
-            header, footer, .stToolbar {
-                visibility: hidden;
-                height: 0;
-            }
-
-            /* 전체 컨테이너 */
-            .present-container {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;   /* ✅ 브라우저 화면 높이 꽉 채움 */
-                width: 100vw;
-            }
-
-            /* 이미지 영역 */
-            .present-img {
-                flex: 1 1 auto;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                height: 100%;
-            }
+            header, footer, .stToolbar {visibility: hidden; height: 0;}
             .present-img img {
-                max-height: 100%;   /* ✅ 세로 최대 화면 높이에 맞춤 */
-                max-width: 100%;    /* ✅ 가로는 자동 축소 */
+                max-height: 90vh;   /* 화면 기준 세로 맞춤 */
+                max-width: 90vw;    /* 가로는 비율 유지 */
                 object-fit: contain;
                 border-radius: 15px;
-                box-shadow: 0 0 40px rgba(255,255,255,0.3);
-            }
-
-            /* 버튼 영역 (하단 고정) */
-            .present-buttons {
-                position: absolute;
-                bottom: 20px;
-                width: 100%;
-                display: flex;
-                justify-content: center;
-                gap: 30px;
-            }
-            .present-buttons button {
-                font-size: 20px;
-                padding: 10px 25px;
-                border-radius: 8px;
-                font-weight: bold;
+                box-shadow: 0 0 30px rgba(255,255,255,0.3);
+                display: block;
+                margin: auto;
             }
         </style>
         """,
@@ -180,11 +143,10 @@ elif st.session_state.mode == "present":
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
 
-        # 컨테이너 출력
-        st.markdown("<div class='present-container'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
+        # ✅ Streamlit의 기본 이미지 위젯 사용
+        st.image(url, use_container_width=False)
 
-        # 버튼 (하단 고정)
+        # ✅ 버튼 (중앙 정렬)
         col1, col2, col3 = st.columns([1,1,1])
         with col1:
             if st.button("◀ Prev"):
@@ -199,5 +161,4 @@ elif st.session_state.mode == "present":
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
 
