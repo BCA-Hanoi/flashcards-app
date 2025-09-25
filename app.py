@@ -47,32 +47,29 @@ if "current" not in st.session_state:
     st.session_state.current = 0
 
 # ==============================
-# 1단계: 단어 입력 화면 (디버그 + UI 수정)
+# 1단계: 단어 입력 화면
 # ==============================
 if st.session_state.mode == "home":
     st.markdown(
         """
         <style>
             body {background-color:black;}
-            .title {
-                text-align:center;
-                font-size:36px;
-                font-weight:bold;
-                color:white;
-                margin-top:15%;
+            .title {text-align:center; font-size:36px; font-weight:bold; color:white; margin-top:15%;}
+            .subtitle {text-align:center; font-size:16px; color:gray;}
+
+            /* 입력창 전체를 70% 너비로 */
+            .stTextInput {
+                display: flex;
+                justify-content: center;
             }
-            .subtitle {
-                text-align:center;
-                font-size:16px;
-                color:gray;
+            .stTextInput > div {
+                width: 70% !important;   /* 전체 폭 제한 */
             }
-            .stTextInput>div>div>input {
-                font-size:20px;
-                padding:10px;
+            .stTextInput input {
+                font-size:20px; 
+                padding:10px; 
                 border-radius:25px;
-                width:70% !important;   /* ✅ 입력창 너비 조정 */
-                margin:auto;             /* ✅ 가운데 정렬 */
-                display:block;
+                width: 100% !important;  /* 입력창 자체도 맞춤 */
             }
         </style>
         """,
@@ -91,11 +88,19 @@ if st.session_state.mode == "home":
 
     if words:
         all_files = get_files_from_folder(FOLDER_ID)
-        st.write("DEBUG files:", all_files[:5])   # ✅ 디버그 출력
-        st.stop()  # ⚠️ 디버그 위해 멈춤 (확인 후 삭제하세요)
 
-        # 파일명(확장자 제외)을 기준으로 매칭
-        file_map = {f["name"].rsplit(".", 1)[0].lower(): f["id"] for f in all_files}
+        # ✅ 디버그 출력
+        st.write("DEBUG files:", all_files[:5])
+
+        # 확장자 제거 + 소문자 변환
+        file_map = {
+            f["name"].rsplit(".", 1)[0].strip().lower(): f["id"]
+            for f in all_files
+        }
+
+        st.write("File map keys:", list(file_map.keys())[:10])  # 디버그
+        st.write("User input words:", [w.strip().lower() for w in words.split(",")])
+
         selected = []
         for w in [w.strip().lower() for w in words.split(",")]:
             if w in file_map:
@@ -107,7 +112,6 @@ if st.session_state.mode == "home":
             st.rerun()
         else:
             st.warning("⚠️ No matching flashcards found. Try again.")
-
 
 # ==============================
 # 2단계: 갤러리 미리보기 화면
