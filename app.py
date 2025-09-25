@@ -130,7 +130,7 @@ elif st.session_state.mode == "present":
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                height: 85vh;  /* 이미지 영역 */
+                height: 85vh;
                 width: 100vw;
             }
             .present-img img {
@@ -142,9 +142,22 @@ elif st.session_state.mode == "present":
             }
             .present-controls {
                 display: flex;
-                justify-content: center;
-                gap: 40px;
-                margin-top: 10px;
+                justify-content: center;   /* 가운데 정렬 */
+                gap: 20px;                 /* 버튼 간격 */
+                margin-top: 15px;
+            }
+            .present-controls button {
+                background: #444;
+                color: white;
+                font-size: 18px;
+                font-weight: bold;
+                padding: 10px 25px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+            }
+            .present-controls button:hover {
+                background: #666;
             }
         </style>
         """,
@@ -153,23 +166,21 @@ elif st.session_state.mode == "present":
 
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
-
-        # 이미지 출력
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼 컨트롤
-        st.markdown("<div class='present-controls'>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1,1,1])
-        with col1:
-            if st.button("◀ Prev"):
-                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-                st.rerun()
-        with col2:
-            if st.button("Exit"):
-                st.session_state.mode = "gallery"
-                st.rerun()
-        with col3:
-            if st.button("Next ▶"):
-                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-                st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+        # 버튼 영역 (HTML + forms 활용)
+        col = st.columns([1, 2, 1])  # 양쪽은 비우고 가운데에 버튼 배치
+        with col[1]:
+            prev, exit, nxt = st.columns([1, 1, 1])
+            with prev:
+                if st.button("◀ Prev"):
+                    st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                    st.rerun()
+            with exit:
+                if st.button("Exit"):
+                    st.session_state.mode = "gallery"
+                    st.rerun()
+            with nxt:
+                if st.button("Next ▶"):
+                    st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                    st.rerun()
