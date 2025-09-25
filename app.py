@@ -111,9 +111,10 @@ elif st.session_state.mode == "gallery":
 
 
 # ==============================
-# 3단계: Presentation 전체화면 모드
+# 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
 # ==============================
 elif st.session_state.mode == "present":
+    # 풀스크린 스타일
     st.markdown(
         """
         <style>
@@ -133,46 +134,35 @@ elif st.session_state.mode == "present":
         unsafe_allow_html=True
     )
 
-    import streamlit.components.v1 as components
-    components.html(
-        """
-        <script>
-        (function(){
-          function navTo(param){
-            const base = window.location.href.split('?')[0];
-            const ts = Date.now();
-            window.location.href = `${base}?nav=${param}&ts=${ts}`;
-          }
-          document.addEventListener("keydown", function(event){
-            if (event.key === "Enter" || event.key === " " || event.key === "ArrowRight") {
-              navTo("next");
-            } else if (event.key === "ArrowLeft") {
-              navTo("prev");
-            } else if (event.key === "Escape") {
-              navTo("exit");
-            }
-          }, {passive:true});
-        })();
-        </script>
-        """,
-        height=0, width=0
-    )
-
+    # 현재 이미지 표시
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-    # ✅ query_params API 사용
-    nav = st.query_params.get("nav", [None])[0]
-    if nav == "next":
-        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "prev":
-        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "exit":
-        st.session_state.mode = "gallery"
-        st.query_params.clear()
-        st.rerun()
+    # 🔑 키 이벤트: streamlit-js-eval 사용
+    from streamlit_js_eval import streamlit_js_eval
+
+    # 이벤트에서 필요한 값 2개를 받아온다: key, timestamp
+    res = streamlit_js_eval(
+        js_expressions=["event.key", "event.timeStamp"],
+        events="keydown",
+        key="present_key_events"
+    )
+st.write("DEBUG key:", res)
+
+    # 디바운싱: 같은 키 이벤트가 중복 반영되지 않도록 timeStamp로 막기
+    if isinstance(res, list) and len(res) == 2:
+        key_pressed, ts = res[0], res[1]
+        last_ts = st.session_state.get("last_key_ts")
+        if ts != last_ts:
+            st.session_state["last_key_ts"] = ts
+
+            if key_pressed in ["Enter", " ", "ArrowRight"]:
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
+            elif key_pressed == "ArrowLeft":
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
+            elif key_pressed == "Escape":
+                st.session_state.mode = "gallery"
+                st.rerun()
