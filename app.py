@@ -1,6 +1,7 @@
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from streamlit_js_eval import streamlit_js_eval
 
 # ==============================
 # Google Drive 연결 설정 (Secrets 사용)
