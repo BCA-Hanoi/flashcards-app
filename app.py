@@ -126,30 +126,25 @@ elif st.session_state.mode == "present":
                 overflow: hidden;
             }
             header, footer, .stToolbar {visibility: hidden; height: 0;}
-            .present-container {
+            .present-img {
                 display: flex;
-                flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                height: 100vh;
+                height: 85vh;  /* 이미지 영역 */
                 width: 100vw;
             }
-            .present-img {
-                flex: 1;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
             .present-img img {
-                max-height: 85vh;   /* 이미지가 화면 세로에 맞게 */
-                max-width: 90vw;    /* 가로는 비율 유지 */
+                max-height: 100%;
+                max-width: 100%;
                 object-fit: contain;
                 border-radius: 15px;
                 box-shadow: 0 0 30px rgba(255,255,255,0.3);
             }
             .present-controls {
-                text-align: center;
-                margin: 10px;
+                display: flex;
+                justify-content: center;
+                gap: 40px;
+                margin-top: 10px;
             }
         </style>
         """,
@@ -159,13 +154,11 @@ elif st.session_state.mode == "present":
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
 
-        # 전체 컨테이너
-        st.markdown("<div class='present-container'>", unsafe_allow_html=True)
-
-        # 이미지
+        # 이미지 출력
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼
+        # 버튼 컨트롤
+        st.markdown("<div class='present-controls'>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1,1,1])
         with col1:
             if st.button("◀ Prev"):
@@ -179,5 +172,4 @@ elif st.session_state.mode == "present":
             if st.button("Next ▶"):
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
-
         st.markdown("</div>", unsafe_allow_html=True)
