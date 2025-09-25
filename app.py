@@ -113,8 +113,6 @@ elif st.session_state.mode == "gallery":
 # ==============================
 # 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
 # ==============================
-from streamlit_js_eval import streamlit_js_eval
-
 elif st.session_state.mode == "present":
     st.markdown(
         """
@@ -145,7 +143,7 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}' id='flashcard'></div>", unsafe_allow_html=True)
 
-        # 자바스크립트 실행 → 클릭 시 메시지 전달
+        # JS 클릭 감지
         clicked = streamlit_js_eval(js_expressions="""
             new Promise((resolve) => {
                 const img = document.getElementById("flashcard");
@@ -155,13 +153,7 @@ elif st.session_state.mode == "present":
             })
         """, key="img_click")
 
-        # 클릭되면 다음 카드로 이동
         if clicked:
             st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
             st.rerun()
 
-
-    if st.session_state.nav_event == "nextCard":
-        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.session_state.nav_event = None
-        st.rerun()
