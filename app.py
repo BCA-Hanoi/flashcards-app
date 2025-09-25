@@ -75,6 +75,7 @@ if st.session_state.mode == "home":
 
     if words:
         all_files = get_files_from_folder(FOLDER_ID)
+        st.write("DEBUG files:", all_files[:5])   # ✅ 디버그 출력
         file_map = {f["name"].rsplit(".", 1)[0].lower(): f["id"] for f in all_files}
         selected = []
         for w in [w.strip().lower() for w in words.split(",")]:
