@@ -120,11 +120,11 @@ elif st.session_state.mode == "present":
             .block-container { padding:0; margin:0; max-width:100%; }
             header, footer, .stToolbar { visibility:hidden; height:0px; }
             body { background:black; margin:0; padding:0; }
-            .present-btn {
+            .present-img {
                 display:flex; justify-content:center; align-items:center;
-                height:100vh; width:100vw; background:black; border:none;
+                height:100vh; width:100vw;
             }
-            .present-btn img {
+            .present-img img {
                 max-height:95vh; max-width:95vw; border-radius:15px;
                 box-shadow:0 0 40px rgba(255,255,255,0.3);
                 cursor:pointer;
@@ -137,17 +137,21 @@ elif st.session_state.mode == "present":
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
 
-        # 버튼 안에 이미지를 넣어서, 클릭 시 다음으로 이동
-        if st.button(
-            f"<img src='{url}' class='present-btn'/>",
-            key="present_image",
-            help="Click to go next",
-            use_container_width=True
-        ):
-            st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-            st.rerun()
+        # HTML 클릭 → query param nav=next 추가
+        st.markdown(
+            f"""
+            <div class='present-img'>
+                <a href='?nav=next'>
+                    <img src='{url}' />
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        # ESC 대신 "Exit" 버튼 하나 추가 (필요 시만)
-        if st.button("Exit Presentation", key="exit_btn"):
-            st.session_state.mode = "gallery"
-            st.rerun()
+    # 쿼리스트링(nav) 처리
+    nav = st.query_params.get("nav", None)
+    if nav == "next":
+        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+        st.query_params.clear()
+        st.rerun()
