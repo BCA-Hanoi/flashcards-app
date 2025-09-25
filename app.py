@@ -134,58 +134,41 @@ elif st.session_state.mode == "present":
                 border-radius:15px;
                 box-shadow:0 0 40px rgba(255,255,255,0.3);
             }
-            /* 버튼 컨테이너 */
-            .button-container {
+            /* 버튼 정렬 */
+            .button-row {
                 display:flex;
                 justify-content:center;
-                gap:20px;    /* 버튼 간격 */
-                margin-top:10px;
+                gap:40px;   /* 버튼 간격 */
+                margin-top:20px;
             }
-            .nav-btn {
-                background:#111827;
-                color:white;
-                font-size:16px;
-                padding:8px 20px;
-                border-radius:6px;
-                border:none;
-                cursor:pointer;
-            }
-            .nav-btn:hover {
-                background:#2563eb;
+            .stButton > button {
+                font-size:18px;
+                padding:10px 20px;
+                border-radius:8px;
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-    # 이미지 출력
     if st.session_state.cards:
+        # 현재 이미지
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼을 HTML로 직접 만듦
-        st.markdown(
-            """
-            <div class="button-container">
-                <form action="?nav=prev" method="get"><button class="nav-btn">◀ Prev</button></form>
-                <form action="?nav=exit" method="get"><button class="nav-btn">Exit</button></form>
-                <form action="?nav=next" method="get"><button class="nav-btn">Next ▶</button></form>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # 버튼 클릭 이벤트 처리
-    nav = st.query_params.get("nav", None)
-    if nav == "next":
-        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "prev":
-        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-        st.query_params.clear()
-        st.rerun()
-    elif nav == "exit":
-        st.session_state.mode = "gallery"
-        st.query_params.clear()
-        st.rerun()
+        # 버튼 가로 배치 (CSS에서 flex 적용됨)
+        st.markdown('<div class="button-row">', unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([1,1,1])
+        with col1:
+            if st.button("◀ Prev"):
+                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+                st.rerun()
+        with col2:
+            if st.button("Exit"):
+                st.session_state.mode = "gallery"
+                st.rerun()
+        with col3:
+            if st.button("Next ▶"):
+                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
