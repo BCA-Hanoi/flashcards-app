@@ -94,9 +94,9 @@ elif st.session_state.mode == "gallery":
     st.subheader("Preview your flashcards below.")
 
     if st.session_state.cards:
-        cols = st.columns(4)
+        cols = st.columns(10)
         for i, url in enumerate(st.session_state.cards):
-            with cols[i % 4]:
+            with cols[i % 10]:
                 st.image(url, use_container_width=True)
 
         if st.button("Presentation ▶"):
