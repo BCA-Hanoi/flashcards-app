@@ -46,18 +46,34 @@ if "cards" not in st.session_state:
 if "current" not in st.session_state:
     st.session_state.current = 0
 
-
 # ==============================
-# 1단계: 단어 입력 화면
+# 1단계: 단어 입력 화면 (디버그 + UI 수정)
 # ==============================
 if st.session_state.mode == "home":
     st.markdown(
         """
         <style>
             body {background-color:black;}
-            .title {text-align:center; font-size:36px; font-weight:bold; color:white; margin-top:15%;}
-            .subtitle {text-align:center; font-size:16px; color:gray;}
-            .stTextInput>div>div>input {font-size:20px; padding:10px; border-radius:25px;}
+            .title {
+                text-align:center;
+                font-size:36px;
+                font-weight:bold;
+                color:white;
+                margin-top:15%;
+            }
+            .subtitle {
+                text-align:center;
+                font-size:16px;
+                color:gray;
+            }
+            .stTextInput>div>div>input {
+                font-size:20px;
+                padding:10px;
+                border-radius:25px;
+                width:70% !important;   /* ✅ 입력창 너비 조정 */
+                margin:auto;             /* ✅ 가운데 정렬 */
+                display:block;
+            }
         </style>
         """,
         unsafe_allow_html=True
@@ -76,6 +92,9 @@ if st.session_state.mode == "home":
     if words:
         all_files = get_files_from_folder(FOLDER_ID)
         st.write("DEBUG files:", all_files[:5])   # ✅ 디버그 출력
+        st.stop()  # ⚠️ 디버그 위해 멈춤 (확인 후 삭제하세요)
+
+        # 파일명(확장자 제외)을 기준으로 매칭
         file_map = {f["name"].rsplit(".", 1)[0].lower(): f["id"] for f in all_files}
         selected = []
         for w in [w.strip().lower() for w in words.split(",")]:
