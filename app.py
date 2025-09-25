@@ -113,40 +113,53 @@ elif st.session_state.mode == "gallery":
 # ==============================
 # 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
 # ==============================
+from streamlit_js_eval import streamlit_js_eval
+
 elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            .block-container { padding:0; margin:0; max-width:100%; }
-            header, footer, .stToolbar { visibility:hidden; height:0px; }
-            body { background:black; margin:0; padding:0; }
+            .block-container {padding:0; margin:0; max-width:100%;}
+            header, footer, .stToolbar {visibility:hidden; height:0;}
+            body {background:black; margin:0; padding:0;}
             .present-img {
-                display:flex; justify-content:center; align-items:center;
-                height:100vh; width:100vw;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                height:100vh;
+                width:100vw;
             }
             .present-img img {
-                max-height:95vh; max-width:95vw; border-radius:15px;
+                max-height:95vh;
+                max-width:95vw;
+                border-radius:15px;
                 box-shadow:0 0 40px rgba(255,255,255,0.3);
                 cursor:pointer;
             }
         </style>
-
-        <script>
-        document.addEventListener("click", function() {
-            window.parent.postMessage({isStreamlitMessage:true, type:"nextCard"}, "*");
-        });
-        </script>
         """,
         unsafe_allow_html=True
     )
 
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
-        st.markdown(f"<div class='present-img'><img src='{url}' /></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='present-img'><img src='{url}' id='flashcard'></div>", unsafe_allow_html=True)
 
-    # 클릭 이벤트 처리
-    if "nav_event" not in st.session_state:
-        st.session_state.nav_event = None
+        # 자바스크립트 실행 → 클릭 시 메시지 전달
+        clicked = streamlit_js_eval(js_expressions="""
+            new Promise((resolve) => {
+                const img = document.getElementById("flashcard");
+                if (img) {
+                    img.onclick = () => resolve(true);
+                }
+            })
+        """, key="img_click")
+
+        # 클릭되면 다음 카드로 이동
+        if clicked:
+            st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+            st.rerun()
+
 
     if st.session_state.nav_event == "nextCard":
         st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
