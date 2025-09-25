@@ -114,7 +114,6 @@ elif st.session_state.mode == "gallery":
 # 3단계: Presentation 전체화면 모드
 # ==============================
 elif st.session_state.mode == "present":
-    # 풀스크린 스타일
     st.markdown(
         """
         <style>
@@ -134,12 +133,6 @@ elif st.session_state.mode == "present":
         unsafe_allow_html=True
     )
 
-    # 현재 이미지
-    if st.session_state.cards:
-        url = st.session_state.cards[st.session_state.current]
-        st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
-
-    # ✅ 키 이벤트를 컴포넌트로 주입 (중요: components.html 사용)
     import streamlit.components.v1 as components
     components.html(
         """
@@ -147,7 +140,7 @@ elif st.session_state.mode == "present":
         (function(){
           function navTo(param){
             const base = window.location.href.split('?')[0];
-            const ts = Date.now(); // 캐시 방지용
+            const ts = Date.now();
             window.location.href = `${base}?nav=${param}&ts=${ts}`;
           }
           document.addEventListener("keydown", function(event){
@@ -165,18 +158,21 @@ elif st.session_state.mode == "present":
         height=0, width=0
     )
 
-    # 쿼리 파라미터 처리
-    params = st.experimental_get_query_params()
-    nav = params.get("nav", [None])[0]
+    if st.session_state.cards:
+        url = st.session_state.cards[st.session_state.current]
+        st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
+
+    # ✅ query_params API 사용
+    nav = st.query_params.get("nav", [None])[0]
     if nav == "next":
         st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-        st.experimental_set_query_params()  # 파라미터 초기화
+        st.query_params.clear()
         st.rerun()
     elif nav == "prev":
         st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-        st.experimental_set_query_params()
+        st.query_params.clear()
         st.rerun()
     elif nav == "exit":
         st.session_state.mode = "gallery"
-        st.experimental_set_query_params()
+        st.query_params.clear()
         st.rerun()
