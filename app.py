@@ -117,13 +117,9 @@ elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            /* 전체 페이지를 검은 배경으로, 여백 제거 */
             .block-container {
-                padding-top: 0rem;
-                padding-bottom: 0rem;
-                padding-left: 0rem;
-                padding-right: 0rem;
-                margin: 0 auto;
+                padding: 0;
+                margin: 0;
                 max-width: 100%;
             }
             header, footer, .stToolbar {
@@ -139,8 +135,8 @@ elif st.session_state.mode == "present":
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                height: 100vh;   /* 화면 세로를 꽉 채움 */
-                width: 100vw;    /* 화면 가로를 꽉 채움 */
+                height: 100vh;
+                width: 100vw;
             }
             .present-img img {
                 max-height: 95vh;
@@ -149,26 +145,39 @@ elif st.session_state.mode == "present":
                 box-shadow: 0 0 40px rgba(255,255,255,0.3);
             }
         </style>
+
+        <script>
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "Enter" || event.key === " " || event.key === "ArrowRight") {
+                fetch("/?nav=next").then(() => window.location.reload());
+            } else if (event.key === "ArrowLeft") {
+                fetch("/?nav=prev").then(() => window.location.reload());
+            } else if (event.key === "Escape") {
+                fetch("/?nav=exit").then(() => window.location.reload());
+            }
+        });
+        </script>
         """,
         unsafe_allow_html=True
     )
 
+    # 현재 이미지 표시
     if st.session_state.cards:
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
+    # 쿼리스트링(nav) 처리
+    nav = st.query_params.get("nav", None)
+    if nav == "next":
+        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+        st.query_params.clear()
+        st.rerun()
+    elif nav == "prev":
+        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+        st.query_params.clear()
+        st.rerun()
+    elif nav == "exit":
+        st.session_state.mode = "gallery"
+        st.query_params.clear()
+        st.rerun()
 
-        # 간단한 네비게이션 버튼 (추후 JS 이벤트 추가 가능)
-        cols = st.columns([1, 1, 1])
-        with cols[0]:
-            if st.button("⬅ Prev"):
-                st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
-                st.rerun()
-        with cols[1]:
-            if st.button("Exit"):
-                st.session_state.mode = "gallery"
-                st.rerun()
-        with cols[2]:
-            if st.button("Next ➡"):
-                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
-                st.rerun()
