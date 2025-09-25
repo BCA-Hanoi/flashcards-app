@@ -118,69 +118,59 @@ elif st.session_state.mode == "present":
     st.markdown(
         """
         <style>
-            /* 상단 여백 제거 */
-            .block-container {
-                padding: 0 !important;
+            html, body, .block-container {
+                height: 100%;
                 margin: 0 !important;
-                max-width: 100% !important;
-            }
-            main {
-                padding-top: 0 !important;
-                padding-bottom: 0 !important;
+                padding: 0 !important;
+                background: black;
+                overflow: hidden; /* ✅ 스크롤 제거 */
             }
             header, footer, .stToolbar {
                 visibility: hidden;
                 height: 0;
             }
-            body {
-                background:black;
-                margin:0;
-                padding:0;
-                overflow:hidden; /* ✅ 스크롤 강제 제거 */
-            }
 
-            /* 프레젠테이션 전체 컨테이너 */
+            /* 전체 컨테이너 */
             .present-container {
-                display:flex;
-                flex-direction:column;
-                justify-content:center;
-                align-items:center;
-                height:100vh;
-                width:100vw;
-                background:black;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;   /* ✅ 브라우저 화면 높이 꽉 채움 */
+                width: 100vw;
             }
 
             /* 이미지 영역 */
             .present-img {
                 flex: 1 1 auto;
-                display:flex;
-                justify-content:center;
-                align-items:center;
-                width:100%;
-                height:85%;   /* 화면의 85% 차지 */
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
             }
             .present-img img {
-                width:100%;
-                height:100%;
-                object-fit:contain; /* ✅ 화면 안에 비율 유지 */
-                border-radius:15px;
-                box-shadow:0 0 40px rgba(255,255,255,0.3);
+                max-height: 100%;   /* ✅ 세로 최대 화면 높이에 맞춤 */
+                max-width: 100%;    /* ✅ 가로는 자동 축소 */
+                object-fit: contain;
+                border-radius: 15px;
+                box-shadow: 0 0 40px rgba(255,255,255,0.3);
             }
 
-            /* 버튼 영역 */
+            /* 버튼 영역 (하단 고정) */
             .present-buttons {
-                flex: 0 0 auto;
-                display:flex;
-                justify-content:center;
-                gap:30px;
-                height:15%;   /* 화면의 나머지 15% */
-                align-items:center;
+                position: absolute;
+                bottom: 20px;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                gap: 30px;
             }
             .present-buttons button {
-                font-size:20px;
-                padding:10px 25px;
-                border-radius:8px;
-                font-weight:bold;
+                font-size: 20px;
+                padding: 10px 25px;
+                border-radius: 8px;
+                font-weight: bold;
             }
         </style>
         """,
@@ -194,7 +184,7 @@ elif st.session_state.mode == "present":
         st.markdown("<div class='present-container'>", unsafe_allow_html=True)
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-        # 버튼들
+        # 버튼 (하단 고정)
         col1, col2, col3 = st.columns([1,1,1])
         with col1:
             if st.button("◀ Prev"):
@@ -210,3 +200,4 @@ elif st.session_state.mode == "present":
                 st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
+
