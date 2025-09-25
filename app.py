@@ -5,9 +5,8 @@ from google.oauth2 import service_account
 # ==============================
 # Google Drive 연결 설정 (Secrets 사용)
 # ==============================
-# 🔑 Streamlit Cloud > Secrets Manager에 저장한 키 사용
 creds = service_account.Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],   # [gcp_service_account] 블록 전체를 읽음
+    st.secrets["gcp_service_account"],   # [gcp_service_account] 블록 전체
     scopes=["https://www.googleapis.com/auth/drive.readonly"]
 )
 
@@ -46,6 +45,7 @@ if "cards" not in st.session_state:
 if "current" not in st.session_state:
     st.session_state.current = 0
 
+
 # ==============================
 # 1단계: 단어 입력 화면
 # ==============================
@@ -56,20 +56,18 @@ if st.session_state.mode == "home":
             body {background-color:black;}
             .title {text-align:center; font-size:36px; font-weight:bold; color:white; margin-top:15%;}
             .subtitle {text-align:center; font-size:16px; color:gray;}
-
-            /* 입력창 전체를 70% 너비로 */
             .stTextInput {
                 display: flex;
                 justify-content: center;
             }
             .stTextInput > div {
-                width: 70% !important;   /* 전체 폭 제한 */
+                width: 70% !important;
             }
             .stTextInput input {
                 font-size:20px; 
                 padding:10px; 
                 border-radius:25px;
-                width: 100% !important;  /* 입력창 자체도 맞춤 */
+                width: 100% !important;
             }
         </style>
         """,
@@ -92,19 +90,21 @@ if st.session_state.mode == "home":
         # ✅ 디버그 출력
         st.write("DEBUG files:", all_files[:5])
 
-        # 확장자 제거 + 소문자 변환
         file_map = {
             f["name"].rsplit(".", 1)[0].strip().lower(): f["id"]
             for f in all_files
         }
 
-        st.write("File map keys:", list(file_map.keys())[:10])  # 디버그
+        st.write("File map keys:", list(file_map.keys())[:10])
         st.write("User input words:", [w.strip().lower() for w in words.split(",")])
 
         selected = []
         for w in [w.strip().lower() for w in words.split(",")]:
             if w in file_map:
-                selected.append(f"https://drive.google.com/uc?id={file_map[w]}")
+                # ✅ URL 방식 변경
+                image_url = f"https://drive.google.com/uc?export=view&id={file_map[w]}"
+                # 또는 썸네일 모드 사용: f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000"
+                selected.append(image_url)
 
         if selected:
             st.session_state.cards = selected
@@ -113,45 +113,25 @@ if st.session_state.mode == "home":
         else:
             st.warning("⚠️ No matching flashcards found. Try again.")
 
+
 # ==============================
 # 2단계: 갤러리 미리보기 화면
 # ==============================
 elif st.session_state.mode == "gallery":
-    st.markdown(
-        """
-        <style>
-            .title {text-align:center; font-size:28px; font-weight:bold; color:white; margin-top:40px;}
-            .subtitle {text-align:center; font-size:16px; color:gray; margin-bottom:20px;}
-            .btn-center {text-align:center; margin-top:30px;}
-            .btn-present {background:#ff4b4b; color:white; font-size:18px; font-weight:bold; padding:12px 40px; border-radius:8px;}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown("<div class='title'>BCA Flashcards</div>", unsafe_allow_html=True)
-    st.markdown("<div class='subtitle'>Preview your flashcards below.</div>", unsafe_allow_html=True)
+    st.title("BCA Flashcards")
+    st.subheader("Preview your flashcards below.")
 
     if st.session_state.cards:
-        # ✅ Streamlit 레이아웃 기반 (한 줄에 5개 카드)
-        num_cols = 5
-        rows = (len(st.session_state.cards) + num_cols - 1) // num_cols
+        cols = st.columns(5)  # 5열 갤러리
+        for i, url in enumerate(st.session_state.cards):
+            with cols[i % 5]:
+                st.write("Image URL:", url)  # ✅ URL 디버그 출력
+                st.image(url, width=120)
 
-        for r in range(rows):
-            cols = st.columns(num_cols)
-            for i in range(num_cols):
-                idx = r * num_cols + i
-                if idx < len(st.session_state.cards):
-                    with cols[i]:
-                        st.image(st.session_state.cards[idx], width=120)
-
-        st.markdown("<div class='btn-center'>", unsafe_allow_html=True)
-        if st.button("Presentation ▶", key="present_btn"):
+        if st.button("Presentation ▶"):
             st.session_state.mode = "present"
             st.session_state.current = 0
             st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
     else:
         st.warning("⚠️ No cards loaded. Please go back and try again.")
         if st.button("Back to Home"):
@@ -190,7 +170,6 @@ elif st.session_state.mode == "present":
         st.image(url, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # 키보드 네비게이션 안내 (streamlit_js_event_listener 없이 기본 구조)
         st.markdown(
             """
             <script>
@@ -208,7 +187,6 @@ elif st.session_state.mode == "present":
             unsafe_allow_html=True
         )
 
-        # 버튼 대신 이벤트 처리 (Session State 업데이트)
         if "nav_event" not in st.session_state:
             st.session_state.nav_event = None
 
