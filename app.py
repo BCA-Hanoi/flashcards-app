@@ -156,20 +156,22 @@ elif st.session_state.mode == "present":
         url = st.session_state.cards[st.session_state.current]
         st.markdown(f"<div class='present-img'><img src='{url}'></div>", unsafe_allow_html=True)
 
-            # 버튼 가로 정렬
-    st.markdown(
-        """
-        <div style="display:flex; justify-content:center; gap:40px; margin-top:20px;">
-            <form action="" method="get">
-                <button type="submit" name="nav" value="prev">◀ Prev</button>
-            </form>
-            <form action="" method="get">
-                <button type="submit" name="nav" value="exit">Exit</button>
-            </form>
-            <form action="" method="get">
-                <button type="submit" name="nav" value="next">Next ▶</button>
-            </form>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+# 버튼 가로 정렬 (Streamlit + CSS)
+# ==============================
+col1, col2, col3 = st.columns([1,1,1])
+
+with col1:
+    if st.button("◀ Prev", use_container_width=True):
+        st.session_state.current = (st.session_state.current - 1) % len(st.session_state.cards)
+        st.rerun()
+
+with col2:
+    if st.button("Exit", use_container_width=True):
+        st.session_state.mode = "gallery"
+        st.rerun()
+
+with col3:
+    if st.button("Next ▶", use_container_width=True):
+        st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
+        st.rerun()
+
