@@ -93,70 +93,49 @@ if st.session_state.mode == "home":
 
 elif st.session_state.mode == "gallery":
     st.title("BCA Flashcards")
-    st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
+    st.subheader("Preview your flashcards below.")
 
-    # 초기화
-    if "selected_cards" not in st.session_state:
-        st.session_state.selected_cards = []
+    if st.session_state.cards:
+        # 반응형 갤러리 (기본 8열)
+        cols = st.columns(st.session_state.gallery_cols)
+        for i, url in enumerate(st.session_state.cards):
+            with cols[i % st.session_state.gallery_cols]:
+                checked = url in st.session_state.selected_cards
+                if st.checkbox(f"Card {i+1}", value=checked, key=f"chk_{i}"):
+                    if url not in st.session_state.selected_cards:
+                        st.session_state.selected_cards.append(url)
+                else:
+                    if url in st.session_state.selected_cards:
+                        st.session_state.selected_cards.remove(url)
 
-    # 보기 옵션 (기본 8열)
-    if "gallery_cols" not in st.session_state:
-        st.session_state.gallery_cols = 8
+                st.image(url, use_container_width=True)
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("📒 8 per row"):
-            st.session_state.gallery_cols = 8
-            st.rerun()
-    with col2:
-        if st.button("📗 3 per row"):
-            st.session_state.gallery_cols = 3
-            st.rerun()
-
-    # 카드 출력
-if st.session_state.cards:
-    cols = st.columns(st.session_state.gallery_cols)
-    for i, url in enumerate(st.session_state.cards):
-        with cols[i % st.session_state.gallery_cols]:
-            # ✅ 디버깅용: 현재 URL을 보여줌
-            st.caption(url)
-
-            # 체크박스
-            checked = url in st.session_state.selected_cards
-            if st.checkbox(f"Card {i+1}", value=checked, key=f"chk_{i}"):
-                if url not in st.session_state.selected_cards:
-                    st.session_state.selected_cards.append(url)
-            else:
-                if url in st.session_state.selected_cards:
-                    st.session_state.selected_cards.remove(url)
-
-            # ✅ 이미지 출력
-            st.image(url, use_container_width=True)
-
-
-        # 버튼 (중앙 정렬)
-        button_cols = st.columns([1,1,1,1])
-        with button_cols[0]:
-            if st.button("✅ Select All"):
+        # ===== 버튼 영역 (하단 중앙 정렬) =====
+        st.markdown("<br>", unsafe_allow_html=True)  # 여백
+        button_cols = st.columns([1,1,1,1,1])  # 5개 컬럼으로 중앙 배치
+        with button_cols[1]:
+            if st.button("✅ Select All", key="select_all"):
                 st.session_state.selected_cards = st.session_state.cards.copy()
                 st.rerun()
-        with button_cols[1]:
-            if st.button("❌ Clear All"):
+        with button_cols[2]:
+            if st.button("❌ Clear All", key="clear_all"):
                 st.session_state.selected_cards = []
                 st.rerun()
-        with button_cols[2]:
-            if st.button("▶ Presentation"):
-                if st.session_state.selected_cards:
-                    st.session_state.cards = st.session_state.selected_cards.copy()
+        with button_cols[3]:
+            if st.button("▶ Presentation", key="present_btn"):
                 st.session_state.mode = "present"
                 st.session_state.current = 0
                 st.rerun()
-        with button_cols[3]:
-            if st.button("🏠 Back to Home"):
+        with button_cols[4]:
+            if st.button("⬅ Home", key="back_home"):
                 st.session_state.mode = "home"
                 st.rerun()
+
     else:
         st.warning("⚠️ No cards loaded. Please go back and try again.")
+        if st.button("⬅ Back to Home", key="back_home_empty"):
+            st.session_state.mode = "home"
+            st.rerun()
 
 
 # ==============================
