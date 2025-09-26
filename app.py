@@ -90,35 +90,34 @@ if st.session_state.mode == "home":
 # ==============================
 # 2단계: 갤러리 미리보기 화면
 # ==============================
-# ==============================
-# 2단계: 갤러리 미리보기 화면
-# ==============================
 elif st.session_state.mode == "gallery":
     st.title("BCA Flashcards")
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
-    # ✅ 입력창을 갤러리 화면 상단에도 표시
-    words = st.text_input(
-        "Flashcards",
-        placeholder="e.g., bucket, apple, maze, rabbit",
+    # ✅ 입력창 (갤러리에서도 단어 추가 가능)
+    new_words = st.text_input(
+        "Add Flashcards",
+        placeholder="e.g., rabbit, lion, sun",
         label_visibility="collapsed",
         key="word_input_gallery"
     )
 
-    if words:
-        all_files = get_files_from_folder(FOLDER_ID)
-        file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
+    if st.button("➕ Add to Gallery"):
+        if new_words:
+            all_files = get_files_from_folder(FOLDER_ID)
+            file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
 
-        new_cards = []
-        for w in [w.strip().lower() for w in words.split(",")]:
-            if w in file_map:
-                new_cards.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
+            new_cards = []
+            for w in [w.strip().lower() for w in new_words.split(",")]:
+                if w in file_map:
+                    new_cards.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
 
-        if new_cards:
-            st.session_state.cards = new_cards
-            st.rerun()
-        else:
-            st.warning("⚠️ No matching flashcards found. Try again.")
+            if new_cards:
+                # ✅ 기존 카드 + 새로운 카드 합치기
+                st.session_state.cards.extend(new_cards)
+                st.rerun()
+            else:
+                st.warning("⚠️ No matching flashcards found. Try again.")
 
     # ✅ 체크박스 선택 UI
     if st.session_state.cards:
@@ -131,18 +130,11 @@ elif st.session_state.mode == "gallery":
                     selected_cards.append(url)
 
         if st.button("Presentation ▶"):
-            if selected_cards:
+            if selected_cards:  # ✅ 선택된 카드만 사용
                 st.session_state.cards = selected_cards
             st.session_state.mode = "present"
             st.session_state.current = 0
             st.rerun()
-    else:
-        st.warning("⚠️ No cards loaded. Please go back and try again.")
-        if st.button("Back to Home"):
-            st.session_state.mode = "home"
-            st.rerun()
-
-
 
 # ==============================
 # 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
