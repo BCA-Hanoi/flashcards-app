@@ -95,75 +95,95 @@ elif st.session_state.mode == "gallery":
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
     # -------------------------
-    # 보기 모드 (8열 기본)
+    # 선택 상태 초기화
     # -------------------------
-    if "gallery_cols" not in st.session_state:
-        st.session_state.gallery_cols = 8   # 기본 8열
-
-    # 버튼 배치
-    col_view1, col_view2 = st.columns([1,1])
-    with col_view1:
-        if st.button("📒 8 per row"):
-            st.session_state.gallery_cols = 8
-            st.rerun()
-    with col_view2:
-        if st.button("📗 3 per row"):
-            st.session_state.gallery_cols = 3
-            st.rerun()
+    if "selected_cards" not in st.session_state:
+        st.session_state.selected_cards = st.session_state.cards.copy()
 
     # -------------------------
-    # 카드 체크박스 표시
+    # 썸네일 그리드 (반응형 8열)
     # -------------------------
-    if st.session_state.cards:
-        if "selected_cards" not in st.session_state:
-            st.session_state.selected_cards = st.session_state.cards.copy()
+    num_cols = 8
+    cols = st.columns(num_cols)
 
-        new_selection = []
-        cols = st.columns(st.session_state.gallery_cols)
+    for i, url in enumerate(st.session_state.cards):
+        with cols[i % num_cols]:
+            checked = url in st.session_state.selected_cards
+            new_val = st.checkbox(
+                "", value=checked, key=f"chk_{i}"
+            )
+            st.image(url, use_container_width=True)
+            # 체크 상태 반영
+            if new_val and url not in st.session_state.selected_cards:
+                st.session_state.selected_cards.append(url)
+            elif not new_val and url in st.session_state.selected_cards:
+                st.session_state.selected_cards.remove(url)
 
-        for i, url in enumerate(st.session_state.cards):
-            with cols[i % st.session_state.gallery_cols]:
-                st.image(url, use_container_width=True)
-                checked = st.checkbox(
-                    f"Card {i+1}",
-                    key=f"chk_{i}",
-                    value=(url in st.session_state.selected_cards)
-                )
-                if checked:
-                    new_selection.append(url)
+    # -------------------------
+    # 버튼 UI (중앙 정렬)
+    # -------------------------
+    st.markdown(
+        """
+        <style>
+        .button-bar {
+            display: flex;
+            justify-content: center;   /* 중앙 정렬 */
+            gap: 15px;                 /* 버튼 간격 */
+            margin-top: 20px;
+        }
+        .button-bar button {
+            background-color: #444;
+            color: white;
+            font-size: 16px;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .button-bar button:hover {
+            background-color: #666;
+        }
+        </style>
 
-        st.session_state.selected_cards = new_selection
+        <div class="button-bar">
+            <form action="" method="get">
+                <button name="action" value="select_all">✅ Select All</button>
+                <button name="action" value="clear_all">❌ Clear All</button>
+                <button name="action" value="present">▶ Presentation</button>
+                <button name="action" value="home">🏠 Back to Home</button>
+            </form>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-        # -------------------------
-        # 버튼들 (이미지 하단)
-        # -------------------------
-        st.markdown("<br>", unsafe_allow_html=True)
-        b1, b2, b3, b4 = st.columns(4)
-        with b1:
-            if st.button("✅ Select All"):
-                for i in range(len(st.session_state.cards)):
-                    st.session_state[f"chk_{i}"] = True
-                st.session_state.selected_cards = st.session_state.cards.copy()
-                st.rerun()
-        with b2:
-            if st.button("❌ Clear All"):
-                for i in range(len(st.session_state.cards)):
-                    st.session_state[f"chk_{i}"] = False
-                st.session_state.selected_cards = []
-                st.rerun()
-        with b3:
-            if st.button("▶ Presentation"):
-                if st.session_state.selected_cards:
-                    st.session_state.cards = st.session_state.selected_cards.copy()
-                st.session_state.mode = "present"
-                st.session_state.current = 0
-                st.rerun()
-        with b4:
-            if st.button("🏠 Back to Home"):
-                st.session_state.mode = "home"
-                st.rerun()
-    else:
-        st.warning("⚠️ No cards loaded. Please go back and try again.")
+    # -------------------------
+    # 버튼 동작 처리
+    # -------------------------
+    action = st.query_params.get("action", None)
+
+    if action == "select_all":
+        st.session_state.selected_cards = st.session_state.cards.copy()
+        st.query_params.clear()
+        st.rerun()
+
+    elif action == "clear_all":
+        st.session_state.selected_cards = []
+        st.query_params.clear()
+        st.rerun()
+
+    elif action == "present":
+        if st.session_state.selected_cards:
+            st.session_state.cards = st.session_state.selected_cards.copy()
+        st.session_state.mode = "present"
+        st.session_state.current = 0
+        st.query_params.clear()
+        st.rerun()
+
+    elif action == "home":
+        st.session_state.mode = "home"
+        st.query_params.clear()
+        st.rerun()
 
 
 # ==============================
