@@ -95,84 +95,91 @@ elif st.session_state.mode == "gallery":
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
     # -------------------------
-    # 선택 상태 초기화
+    # Add More 입력창 토글
     # -------------------------
+    if "show_input" not in st.session_state:
+        st.session_state.show_input = False
     if "selected_cards" not in st.session_state:
         st.session_state.selected_cards = st.session_state.cards.copy()
 
-    # -------------------------
-    # 썸네일 그리드 (반응형 8열)
-    # -------------------------
-    num_cols = 8
-    cols = st.columns(num_cols)
-
-    for i, url in enumerate(st.session_state.cards):
-        with cols[i % num_cols]:
-            checked = url in st.session_state.selected_cards
-            new_val = st.checkbox(
-                "", value=checked, key=f"chk_{i}"
-            )
-            st.image(url, use_container_width=True)
-            # 체크 상태 반영
-            if new_val and url not in st.session_state.selected_cards:
-                st.session_state.selected_cards.append(url)
-            elif not new_val and url in st.session_state.selected_cards:
-                st.session_state.selected_cards.remove(url)
-
-    # -------------------------
-    # 버튼 UI (중앙 정렬)
-    # -------------------------
-        col1, col2, col3, col4 = st.columns([1,1,1,1], gap="medium")
-
-    with col1:
-        if st.button("✅ Select All"):
-            st.session_state.selected_cards = st.session_state.cards.copy()
-
-    with col2:
-        if st.button("❌ Clear All"):
-            st.session_state.selected_cards = []
-
-    with col3:
-        if st.button("▶ Presentation"):
-            if st.session_state.selected_cards:
-                st.session_state.cards = st.session_state.selected_cards.copy()
-            st.session_state.mode = "present"
-            st.session_state.current = 0
-            st.rerun()
-
-    with col4:
-        if st.button("🏠 Back to Home"):
-            st.session_state.mode = "home"
-            st.rerun()
-
-    # -------------------------
-    # 버튼 동작 처리
-    # -------------------------
-    action = st.query_params.get("action", None)
-
-    if action == "select_all":
-        st.session_state.selected_cards = st.session_state.cards.copy()
-        st.query_params.clear()
+    if st.button("➕ Add More"):
+        st.session_state.show_input = not st.session_state.show_input
         st.rerun()
 
-    elif action == "clear_all":
-        st.session_state.selected_cards = []
-        st.query_params.clear()
-        st.rerun()
+    if st.session_state.show_input:
+        new_words = st.text_input(
+            "Add Flashcards",
+            placeholder="e.g., rabbit, lion, sun",
+            label_visibility="collapsed",
+            key="word_input_gallery"
+        )
+        if st.button("Add Now"):
+            if new_words:
+                all_files = get_files_from_folder(FOLDER_ID)
+                file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
+                to_add = []
+                for w in [w.strip().lower() for w in new_words.split(",")]:
+                    if w in file_map:
+                        to_add.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
 
-    elif action == "present":
-        if st.session_state.selected_cards:
-            st.session_state.cards = st.session_state.selected_cards.copy()
-        st.session_state.mode = "present"
-        st.session_state.current = 0
-        st.query_params.clear()
-        st.rerun()
+                if to_add:
+                    # 중복 제거 + 순서 유지
+                    st.session_state.cards = list(dict.fromkeys(st.session_state.cards + to_add))
+                    # 새로 추가된 카드는 선택 해제 상태로 둔다 (별도 처리 X)
+                st.session_state.show_input = False
+                st.rerun()
 
-    elif action == "home":
-        st.session_state.mode = "home"
-        st.query_params.clear()
-        st.rerun()
+    # -------------------------
+    # 갤러리 + 체크박스
+    # -------------------------
+    if st.session_state.cards:
+        new_selection = []
+        # 자동 반응형: 화면 크기에 따라 열 개수 조정
+        num_cols = 6 if len(st.session_state.cards) > 12 else 4
+        cols = st.columns(num_cols)
 
+        for i, url in enumerate(st.session_state.cards):
+            with cols[i % num_cols]:
+                st.image(url, use_container_width=True)
+                # 선택 상태 유지, 새로 추가된 건 기본 False
+                default_checked = st.session_state.get(f"chk_{i}", url in st.session_state.selected_cards)
+                checked = st.checkbox(f"Card {i+1}", key=f"chk_{i}", value=default_checked)
+                if checked:
+                    new_selection.append(url)
+
+        # 선택 갱신
+        st.session_state.selected_cards = new_selection
+
+        # -------------------------
+        # 버튼들 (이미지 하단에 정렬)
+        # -------------------------
+        st.markdown("<br>", unsafe_allow_html=True)
+        b1, b2, b3, b4 = st.columns(4)
+        with b1:
+            if st.button("✅ Select All"):
+                for i in range(len(st.session_state.cards)):
+                    st.session_state[f"chk_{i}"] = True
+                st.session_state.selected_cards = st.session_state.cards.copy()
+                st.rerun()
+        with b2:
+            if st.button("❌ Clear All"):
+                for i in range(len(st.session_state.cards)):
+                    st.session_state[f"chk_{i}"] = False
+                st.session_state.selected_cards = []
+                st.rerun()
+        with b3:
+            if st.button("▶ Presentation"):
+                if st.session_state.selected_cards:
+                    st.session_state.cards = st.session_state.selected_cards.copy()
+                st.session_state.mode = "present"
+                st.session_state.current = 0
+                st.rerun()
+        with b4:
+            if st.button("🏠 Back to Home"):
+                st.session_state.mode = "home"
+                st.rerun()
+    else:
+        st.warning("⚠️ No cards loaded. Please go back and try again.")
 
 # ==============================
 # 3단계: Presentation 전체화면 모드
