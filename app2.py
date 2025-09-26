@@ -150,20 +150,24 @@ elif st.session_state.mode == "gallery":
         # 버튼 (왼쪽 정렬)
         # -------------------------
         st.markdown("<br>", unsafe_allow_html=True)
-        col1, col2, _ = st.columns([1,1,6])  # 버튼 2개 왼쪽, 나머지 공간 비움
-        with col1:
+        b1, b2, b3 = st.columns([1,1,6])
+        with b1:
             if st.button("▶ Presentation"):
-                if st.session_state.selected_cards:
-                    st.session_state.cards = st.session_state.selected_cards.copy()
                 st.session_state.mode = "present"
                 st.session_state.current = 0
                 st.rerun()
-        with col2:
-            if st.button("🏠 Back to Home"):
+        with b2:
+            if st.button("🎮 Memory Game"):
+                if st.session_state.cards:
+                    st.session_state.mode = "memory_game"
+                    st.session_state.memory_flipped = []
+                    st.session_state.memory_matched = []
+                    st.rerun()
+        with b3:
+            if st.button("🏠 Home"):
                 st.session_state.mode = "home"
                 st.rerun()
-    else:
-        st.warning("⚠️ No cards loaded. Please go back and try again.")
+
 
 
 # ==============================
@@ -208,6 +212,48 @@ elif st.session_state.mode == "present":
             if st.button("Exit", use_container_width=True):
                 st.session_state.mode = "gallery"
                 st.rerun()
+
+
+# ==============================
+# 4단계: 메모리 게임 모드
+# ==============================
+elif st.session_state.mode == "memory_game":
+    st.title("🎮 Memory Game")
+
+    cards = st.session_state.cards.copy()
+
+    num_cols = 4
+    cols = st.columns(num_cols)
+
+    for i, url in enumerate(cards):
+        with cols[i % num_cols]:
+            if i in st.session_state.memory_matched:
+                st.image(url, use_container_width=True)  # 매칭된 카드
+            elif i in st.session_state.memory_flipped:
+                st.image(url, use_container_width=True)  # 뒤집힌 카드
+            else:
+                if st.button(f"Card {i+1}", key=f"mem_{i}"):
+                    st.session_state.memory_flipped.append(i)
+                    if len(st.session_state.memory_flipped) == 2:
+                        i1, i2 = st.session_state.memory_flipped
+                        if cards[i1] == cards[i2]:
+                            st.session_state.memory_matched.extend([i1, i2])
+                        st.session_state.memory_flipped = []
+                    st.rerun()
+
+    # -------------------------
+    # 버튼들
+    # -------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+    b1, b2 = st.columns([1,1])
+    with b1:
+        if st.button("⬅ Exit to Gallery"):
+            st.session_state.mode = "gallery"
+            st.rerun()
+    with b2:
+        if st.button("🏠 Home"):
+            st.session_state.mode = "home"
+            st.rerun()
 
         with col3:
             if st.button("Next ▶", use_container_width=True):
