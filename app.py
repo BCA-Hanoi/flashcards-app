@@ -90,17 +90,49 @@ if st.session_state.mode == "home":
 # ==============================
 # 2단계: 갤러리 미리보기 화면
 # ==============================
+# ==============================
+# 2단계: 갤러리 미리보기 화면
+# ==============================
 elif st.session_state.mode == "gallery":
     st.title("BCA Flashcards")
-    st.subheader("Preview your flashcards below.")
+    st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
+    # ✅ 입력창을 갤러리 화면 상단에도 표시
+    words = st.text_input(
+        "Flashcards",
+        placeholder="e.g., bucket, apple, maze, rabbit",
+        label_visibility="collapsed",
+        key="word_input_gallery"
+    )
+
+    if words:
+        all_files = get_files_from_folder(FOLDER_ID)
+        file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
+
+        new_cards = []
+        for w in [w.strip().lower() for w in words.split(",")]:
+            if w in file_map:
+                new_cards.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
+
+        if new_cards:
+            st.session_state.cards = new_cards
+            st.rerun()
+        else:
+            st.warning("⚠️ No matching flashcards found. Try again.")
+
+    # ✅ 체크박스 선택 UI
     if st.session_state.cards:
-        cols = st.columns(10)
+        selected_cards = []
+        cols = st.columns(6)
         for i, url in enumerate(st.session_state.cards):
-            with cols[i % 10]:
+            with cols[i % 6]:
                 st.image(url, use_container_width=True)
+                if st.checkbox(f"Select {i+1}", key=f"chk_{i}"):
+                    selected_cards.append(url)
 
         if st.button("Presentation ▶"):
+            if selected_cards:
+                st.session_state.cards = selected_cards
             st.session_state.mode = "present"
             st.session_state.current = 0
             st.rerun()
@@ -109,6 +141,7 @@ elif st.session_state.mode == "gallery":
         if st.button("Back to Home"):
             st.session_state.mode = "home"
             st.rerun()
+
 
 
 # ==============================
