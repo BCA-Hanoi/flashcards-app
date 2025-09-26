@@ -90,9 +90,7 @@ if st.session_state.mode == "home":
 # ==============================
 # 2단계: 갤러리 미리보기 화면
 # ==============================
-# ==============================
-# 2단계: 갤러리 미리보기 화면
-# ==============================
+
 elif st.session_state.mode == "gallery":
     st.title("BCA Flashcards")
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
@@ -116,17 +114,25 @@ elif st.session_state.mode == "gallery":
             st.rerun()
 
     # 카드 출력
-    if st.session_state.cards:
-        cols = st.columns(st.session_state.gallery_cols)
-        for i, url in enumerate(st.session_state.cards):
-            with cols[i % st.session_state.gallery_cols]:
-                checked = url in st.session_state.selected_cards
-                if st.checkbox(f"Card {i+1}", value=checked, key=f"chk_{i}"):
-                    if url not in st.session_state.selected_cards:
-                        st.session_state.selected_cards.append(url)
-                else:
-                    if url in st.session_state.selected_cards:
-                        st.session_state.selected_cards.remove(url)
+if st.session_state.cards:
+    cols = st.columns(st.session_state.gallery_cols)
+    for i, url in enumerate(st.session_state.cards):
+        with cols[i % st.session_state.gallery_cols]:
+            # ✅ 디버깅용: 현재 URL을 보여줌
+            st.caption(url)
+
+            # 체크박스
+            checked = url in st.session_state.selected_cards
+            if st.checkbox(f"Card {i+1}", value=checked, key=f"chk_{i}"):
+                if url not in st.session_state.selected_cards:
+                    st.session_state.selected_cards.append(url)
+            else:
+                if url in st.session_state.selected_cards:
+                    st.session_state.selected_cards.remove(url)
+
+            # ✅ 이미지 출력
+            st.image(url, use_container_width=True)
+
 
         # 버튼 (중앙 정렬)
         button_cols = st.columns([1,1,1,1])
