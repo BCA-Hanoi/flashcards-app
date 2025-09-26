@@ -94,12 +94,17 @@ elif st.session_state.mode == "gallery":
     st.title("BCA Flashcards")
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
-    # 🔹 Add More 버튼 → 입력창 표시 토글
+    # -------------------------
+    # Add More 입력창 토글
+    # -------------------------
     if "show_input" not in st.session_state:
         st.session_state.show_input = False
+    if "selected_cards" not in st.session_state:
+        st.session_state.selected_cards = st.session_state.cards.copy()
 
     if st.button("➕ Add More"):
         st.session_state.show_input = not st.session_state.show_input
+        st.rerun()
 
     if st.session_state.show_input:
         new_words = st.text_input(
@@ -108,67 +113,72 @@ elif st.session_state.mode == "gallery":
             label_visibility="collapsed",
             key="word_input_gallery"
         )
-
         if st.button("Add Now"):
             if new_words:
                 all_files = get_files_from_folder(FOLDER_ID)
                 file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
-
-                new_cards = []
+                to_add = []
                 for w in [w.strip().lower() for w in new_words.split(",")]:
                     if w in file_map:
-                        new_cards.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
+                        to_add.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
 
-                if new_cards:
-                    # ✅ 중복 제거 후 갱신
-                    st.session_state.cards = list(set(st.session_state.cards + new_cards))
-                    st.session_state.show_input = False
-                    st.rerun()
-                else:
-                    st.warning("⚠️ No matching flashcards found. Try again.")
+                if to_add:
+                    # 중복 제거 + 순서 유지
+                    st.session_state.cards = list(dict.fromkeys(st.session_state.cards + to_add))
+                    # 새로 추가된 것도 선택된 상태로 두고 싶으면 아래 한 줄 활성화
+                    # st.session_state.selected_cards = list(dict.fromkeys(st.session_state.selected_cards + to_add))
+                st.session_state.show_input = False
+                st.rerun()
 
-    # 🔹 카드 선택 UI
-    if st.session_state.cards:
-        if "selected_cards" not in st.session_state:
+    # -------------------------
+    # 컨트롤 버튼 라인 (Select/Clear/Present/Home)
+    # 버튼이 체크박스보다 먼저 실행되어야 상태 반영됨
+    # -------------------------
+    c1, c2, c3, c4 = st.columns([1,1,1,1])
+    with c1:
+        if st.button("✅ Select All"):
+            for i in range(len(st.session_state.cards)):
+                st.session_state[f"chk_{i}"] = True
             st.session_state.selected_cards = st.session_state.cards.copy()
+            st.rerun()
+    with c2:
+        if st.button("❌ Clear All"):
+            for i in range(len(st.session_state.cards)):
+                st.session_state[f"chk_{i}"] = False
+            st.session_state.selected_cards = []
+            st.rerun()
+    with c3:
+        if st.button("▶ Presentation"):
+            if st.session_state.selected_cards:
+                st.session_state.cards = st.session_state.selected_cards.copy()
+            st.session_state.mode = "present"
+            st.session_state.current = 0
+            st.rerun()
+    with c4:
+        if st.button("🏠 Back to Home"):
+            st.session_state.mode = "home"
+            st.rerun()
 
+    # -------------------------
+    # 갤러리 + 체크박스
+    # -------------------------
+    if st.session_state.cards:
         new_selection = []
         cols = st.columns(6)
         for i, url in enumerate(st.session_state.cards):
             with cols[i % 6]:
                 st.image(url, use_container_width=True)
-                checked = st.checkbox(
-                    f"Card {i+1}",
-                    key=f"chk_{i}",
-                    value=(url in st.session_state.selected_cards)
-                )
+                # 위에서 버튼으로 세팅한 위젯 상태를 우선 사용
+                default_checked = st.session_state.get(f"chk_{i}", url in st.session_state.selected_cards)
+                checked = st.checkbox(f"Card {i+1}", key=f"chk_{i}", value=default_checked)
                 if checked:
                     new_selection.append(url)
 
+        # 선택 갱신
         st.session_state.selected_cards = new_selection
 
-        # 🔹 실행 버튼들 (하단에 모아서 배치)
-        st.markdown("<br>", unsafe_allow_html=True)  # 간격 추가
-        col_btn1, col_btn2, col_btn3, col_btn4 = st.columns([1,1,1,1])
-        with col_btn1:
-            if st.button("✅ Select All"):
-                st.session_state.selected_cards = st.session_state.cards.copy()
-                st.rerun()
-        with col_btn2:
-            if st.button("❌ Clear All"):
-                st.session_state.selected_cards = []
-                st.rerun()
-        with col_btn3:
-            if st.button("▶ Presentation"):
-                if st.session_state.selected_cards:
-                    st.session_state.cards = st.session_state.selected_cards
-                st.session_state.mode = "present"
-                st.session_state.current = 0
-                st.rerun()
-        with col_btn4:
-            if st.button("🏠 Back to Home"):
-                st.session_state.mode = "home"
-                st.rerun()
+    else:
+        st.warning("⚠️ No cards loaded. Please go back and try again.")
 
 # ==============================
 # 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
