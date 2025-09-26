@@ -94,71 +94,78 @@ elif st.session_state.mode == "gallery":
     st.title("BCA Flashcards")
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
-    # ✅ 단어 추가 입력창
-    new_words = st.text_input(
-        "Add Flashcards",
-        placeholder="e.g., rabbit, lion, sun",
-        label_visibility="collapsed",
-        key="word_input_gallery"
-    )
+    # 🔹 Add More 버튼 → 입력창 표시 토글
+    if "show_input" not in st.session_state:
+        st.session_state.show_input = False
 
-    if st.button("➕ Add to Gallery"):
-        if new_words:
-            all_files = get_files_from_folder(FOLDER_ID)
-            file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
+    if st.button("➕ Add More"):
+        st.session_state.show_input = not st.session_state.show_input
 
-            new_cards = []
-            for w in [w.strip().lower() for w in new_words.split(",")]:
-                if w in file_map:
-                    new_cards.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
+    if st.session_state.show_input:
+        new_words = st.text_input(
+            "Add Flashcards",
+            placeholder="e.g., rabbit, lion, sun",
+            label_visibility="collapsed",
+            key="word_input_gallery"
+        )
 
-            if new_cards:
-                # ✅ 중복 방지
-                st.session_state.cards = list(set(st.session_state.cards + new_cards))
-                st.rerun()
-            else:
-                st.warning("⚠️ No matching flashcards found. Try again.")
+        if st.button("Add Now"):
+            if new_words:
+                all_files = get_files_from_folder(FOLDER_ID)
+                file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
 
-    # ✅ 카드가 있을 때만 표시
+                new_cards = []
+                for w in [w.strip().lower() for w in new_words.split(",")]:
+                    if w in file_map:
+                        new_cards.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
+
+                if new_cards:
+                    # ✅ 중복 제거 후 갱신
+                    st.session_state.cards = list(set(st.session_state.cards + new_cards))
+                    st.session_state.show_input = False
+                    st.rerun()
+                else:
+                    st.warning("⚠️ No matching flashcards found. Try again.")
+
+    # 🔹 카드 선택 UI
     if st.session_state.cards:
-        st.write("Select the cards you want to present:")
-
-        # 모두 선택 / 선택 해제 버튼
-        col_btn1, col_btn2 = st.columns([1,1])
-        with col_btn1:
-            if st.button("✅ Select All"):
-                st.session_state.selected_cards = st.session_state.cards.copy()
-        with col_btn2:
-            if st.button("❌ Clear All"):
-                st.session_state.selected_cards = []
-
-        # 선택된 카드 상태 유지
         if "selected_cards" not in st.session_state:
             st.session_state.selected_cards = st.session_state.cards.copy()
 
-        # 카드 + 체크박스 UI
         new_selection = []
         cols = st.columns(6)
         for i, url in enumerate(st.session_state.cards):
             with cols[i % 6]:
                 st.image(url, use_container_width=True)
-                checked = st.checkbox(f"Card {i+1}", key=f"chk_{i}", value=(url in st.session_state.selected_cards))
+                checked = st.checkbox(
+                    f"Card {i+1}",
+                    key=f"chk_{i}",
+                    value=(url in st.session_state.selected_cards)
+                )
                 if checked:
                     new_selection.append(url)
 
-        # 선택 업데이트
         st.session_state.selected_cards = new_selection
 
-        # 컨트롤 버튼 (프레젠테이션 / 홈으로)
-        col_ctrl1, col_ctrl2 = st.columns([1,1])
-        with col_ctrl1:
+        # 🔹 실행 버튼들 (하단에 모아서 배치)
+        st.markdown("<br>", unsafe_allow_html=True)  # 간격 추가
+        col_btn1, col_btn2, col_btn3, col_btn4 = st.columns([1,1,1,1])
+        with col_btn1:
+            if st.button("✅ Select All"):
+                st.session_state.selected_cards = st.session_state.cards.copy()
+                st.rerun()
+        with col_btn2:
+            if st.button("❌ Clear All"):
+                st.session_state.selected_cards = []
+                st.rerun()
+        with col_btn3:
             if st.button("▶ Presentation"):
                 if st.session_state.selected_cards:
                     st.session_state.cards = st.session_state.selected_cards
                 st.session_state.mode = "present"
                 st.session_state.current = 0
                 st.rerun()
-        with col_ctrl2:
+        with col_btn4:
             if st.button("🏠 Back to Home"):
                 st.session_state.mode = "home"
                 st.rerun()
