@@ -95,63 +95,47 @@ elif st.session_state.mode == "gallery":
     st.subheader("Preview your flashcards below. Select the ones you want for presentation.")
 
     # -------------------------
-    # Add More 입력창 토글
+    # 보기 모드 (8열 기본)
     # -------------------------
-    if "show_input" not in st.session_state:
-        st.session_state.show_input = False
-    if "selected_cards" not in st.session_state:
-        st.session_state.selected_cards = st.session_state.cards.copy()
+    if "gallery_cols" not in st.session_state:
+        st.session_state.gallery_cols = 8   # 기본 8열
 
-    if st.button("➕ Add More"):
-        st.session_state.show_input = not st.session_state.show_input
-        st.rerun()
-
-    if st.session_state.show_input:
-        new_words = st.text_input(
-            "Add Flashcards",
-            placeholder="e.g., rabbit, lion, sun",
-            label_visibility="collapsed",
-            key="word_input_gallery"
-        )
-        if st.button("Add Now"):
-            if new_words:
-                all_files = get_files_from_folder(FOLDER_ID)
-                file_map = {f["name"].rsplit(".", 1)[0].strip().lower(): f["id"] for f in all_files}
-                to_add = []
-                for w in [w.strip().lower() for w in new_words.split(",")]:
-                    if w in file_map:
-                        to_add.append(f"https://drive.google.com/thumbnail?id={file_map[w]}&sz=w1000")
-
-                if to_add:
-                    # 중복 제거 + 순서 유지
-                    st.session_state.cards = list(dict.fromkeys(st.session_state.cards + to_add))
-                    # 새로 추가된 카드는 선택 해제 상태로 둔다 (별도 처리 X)
-                st.session_state.show_input = False
-                st.rerun()
+    # 버튼 배치
+    col_view1, col_view2 = st.columns([1,1])
+    with col_view1:
+        if st.button("📒 8 per row"):
+            st.session_state.gallery_cols = 8
+            st.rerun()
+    with col_view2:
+        if st.button("📗 3 per row"):
+            st.session_state.gallery_cols = 3
+            st.rerun()
 
     # -------------------------
-    # 갤러리 + 체크박스
+    # 카드 체크박스 표시
     # -------------------------
     if st.session_state.cards:
+        if "selected_cards" not in st.session_state:
+            st.session_state.selected_cards = st.session_state.cards.copy()
+
         new_selection = []
-        # 자동 반응형: 화면 크기에 따라 열 개수 조정
-        num_cols = 6 if len(st.session_state.cards) > 12 else 4
-        cols = st.columns(num_cols)
+        cols = st.columns(st.session_state.gallery_cols)
 
         for i, url in enumerate(st.session_state.cards):
-            with cols[i % num_cols]:
+            with cols[i % st.session_state.gallery_cols]:
                 st.image(url, use_container_width=True)
-                # 선택 상태 유지, 새로 추가된 건 기본 False
-                default_checked = st.session_state.get(f"chk_{i}", url in st.session_state.selected_cards)
-                checked = st.checkbox(f"Card {i+1}", key=f"chk_{i}", value=default_checked)
+                checked = st.checkbox(
+                    f"Card {i+1}",
+                    key=f"chk_{i}",
+                    value=(url in st.session_state.selected_cards)
+                )
                 if checked:
                     new_selection.append(url)
 
-        # 선택 갱신
         st.session_state.selected_cards = new_selection
 
         # -------------------------
-        # 버튼들 (이미지 하단에 정렬)
+        # 버튼들 (이미지 하단)
         # -------------------------
         st.markdown("<br>", unsafe_allow_html=True)
         b1, b2, b3, b4 = st.columns(4)
@@ -180,6 +164,7 @@ elif st.session_state.mode == "gallery":
                 st.rerun()
     else:
         st.warning("⚠️ No cards loaded. Please go back and try again.")
+
 
 # ==============================
 # 3단계: Presentation 전체화면 모드
