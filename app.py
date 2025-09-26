@@ -122,40 +122,28 @@ elif st.session_state.mode == "gallery":
     # -------------------------
     # 버튼 UI (중앙 정렬)
     # -------------------------
-    st.markdown(
-        """
-        <style>
-        .button-bar {
-            display: flex;
-            justify-content: center;   /* 중앙 정렬 */
-            gap: 15px;                 /* 버튼 간격 */
-            margin-top: 20px;
-        }
-        .button-bar button {
-            background-color: #444;
-            color: white;
-            font-size: 16px;
-            padding: 8px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .button-bar button:hover {
-            background-color: #666;
-        }
-        </style>
+        col1, col2, col3, col4 = st.columns([1,1,1,1], gap="medium")
 
-        <div class="button-bar">
-            <form action="" method="get">
-                <button name="action" value="select_all">✅ Select All</button>
-                <button name="action" value="clear_all">❌ Clear All</button>
-                <button name="action" value="present">▶ Presentation</button>
-                <button name="action" value="home">🏠 Back to Home</button>
-            </form>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    with col1:
+        if st.button("✅ Select All"):
+            st.session_state.selected_cards = st.session_state.cards.copy()
+
+    with col2:
+        if st.button("❌ Clear All"):
+            st.session_state.selected_cards = []
+
+    with col3:
+        if st.button("▶ Presentation"):
+            if st.session_state.selected_cards:
+                st.session_state.cards = st.session_state.selected_cards.copy()
+            st.session_state.mode = "present"
+            st.session_state.current = 0
+            st.rerun()
+
+    with col4:
+        if st.button("🏠 Back to Home"):
+            st.session_state.mode = "home"
+            st.rerun()
 
     # -------------------------
     # 버튼 동작 처리
