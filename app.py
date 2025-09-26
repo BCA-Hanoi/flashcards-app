@@ -125,50 +125,23 @@ elif st.session_state.mode == "gallery":
                 if to_add:
                     # 중복 제거 + 순서 유지
                     st.session_state.cards = list(dict.fromkeys(st.session_state.cards + to_add))
-                    # 새로 추가된 것도 선택된 상태로 두고 싶으면 아래 한 줄 활성화
-                    # st.session_state.selected_cards = list(dict.fromkeys(st.session_state.selected_cards + to_add))
+                    # 새로 추가된 카드는 선택 해제 상태로 둔다 (별도 처리 X)
                 st.session_state.show_input = False
                 st.rerun()
-
-    # -------------------------
-    # 컨트롤 버튼 라인 (Select/Clear/Present/Home)
-    # 버튼이 체크박스보다 먼저 실행되어야 상태 반영됨
-    # -------------------------
-    c1, c2, c3, c4 = st.columns([1,1,1,1])
-    with c1:
-        if st.button("✅ Select All"):
-            for i in range(len(st.session_state.cards)):
-                st.session_state[f"chk_{i}"] = True
-            st.session_state.selected_cards = st.session_state.cards.copy()
-            st.rerun()
-    with c2:
-        if st.button("❌ Clear All"):
-            for i in range(len(st.session_state.cards)):
-                st.session_state[f"chk_{i}"] = False
-            st.session_state.selected_cards = []
-            st.rerun()
-    with c3:
-        if st.button("▶ Presentation"):
-            if st.session_state.selected_cards:
-                st.session_state.cards = st.session_state.selected_cards.copy()
-            st.session_state.mode = "present"
-            st.session_state.current = 0
-            st.rerun()
-    with c4:
-        if st.button("🏠 Back to Home"):
-            st.session_state.mode = "home"
-            st.rerun()
 
     # -------------------------
     # 갤러리 + 체크박스
     # -------------------------
     if st.session_state.cards:
         new_selection = []
-        cols = st.columns(6)
+        # 자동 반응형: 화면 크기에 따라 열 개수 조정
+        num_cols = 6 if len(st.session_state.cards) > 12 else 4
+        cols = st.columns(num_cols)
+
         for i, url in enumerate(st.session_state.cards):
-            with cols[i % 6]:
+            with cols[i % num_cols]:
                 st.image(url, use_container_width=True)
-                # 위에서 버튼으로 세팅한 위젯 상태를 우선 사용
+                # 선택 상태 유지, 새로 추가된 건 기본 False
                 default_checked = st.session_state.get(f"chk_{i}", url in st.session_state.selected_cards)
                 checked = st.checkbox(f"Card {i+1}", key=f"chk_{i}", value=default_checked)
                 if checked:
@@ -177,12 +150,37 @@ elif st.session_state.mode == "gallery":
         # 선택 갱신
         st.session_state.selected_cards = new_selection
 
+        # -------------------------
+        # 버튼들 (이미지 하단에 정렬)
+        # -------------------------
+        st.markdown("<br>", unsafe_allow_html=True)
+        b1, b2, b3, b4 = st.columns(4)
+        with b1:
+            if st.button("✅ Select All"):
+                for i in range(len(st.session_state.cards)):
+                    st.session_state[f"chk_{i}"] = True
+                st.session_state.selected_cards = st.session_state.cards.copy()
+                st.rerun()
+        with b2:
+            if st.button("❌ Clear All"):
+                for i in range(len(st.session_state.cards)):
+                    st.session_state[f"chk_{i}"] = False
+                st.session_state.selected_cards = []
+                st.rerun()
+        with b3:
+            if st.button("▶ Presentation"):
+                if st.session_state.selected_cards:
+                    st.session_state.cards = st.session_state.selected_cards.copy()
+                st.session_state.mode = "present"
+                st.session_state.current = 0
+                st.rerun()
+        with b4:
+            if st.button("🏠 Back to Home"):
+                st.session_state.mode = "home"
+                st.rerun()
     else:
         st.warning("⚠️ No cards loaded. Please go back and try again.")
 
-# ==============================
-# 3단계: Presentation 전체화면 모드 (키보드 네비게이션: Enter/Space/→, ←, ESC)
-# ==============================
 # ==============================
 # 3단계: Presentation 전체화면 모드
 # ==============================
