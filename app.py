@@ -436,9 +436,12 @@ elif st.session_state.mode == "memory_setup":
     st.title("🧠 Memory Game Setup")
     st.subheader("How many pairs do you want?")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
+        st.write("")  # Empty space
+    
+    with col2:
         if st.button("4 Cards (2 pairs)", use_container_width=True):
             pairs = random.sample(st.session_state.selected_cards, min(2, len(st.session_state.selected_cards)))
             st.session_state.game_cards = pairs + pairs
@@ -447,6 +450,14 @@ elif st.session_state.mode == "memory_setup":
             st.session_state.memory_matched = []
             st.session_state.mode = "memory_game"
             st.rerun()
+    
+    with col3:
+        st.write("")  # Empty space
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
+    with col1:
+        st.write("")
     
     with col2:
         if st.button("8 Cards (4 pairs)", use_container_width=True):
@@ -459,14 +470,7 @@ elif st.session_state.mode == "memory_setup":
             st.rerun()
     
     with col3:
-        if st.button("12 Cards (6 pairs)", use_container_width=True):
-            pairs = random.sample(st.session_state.selected_cards, min(6, len(st.session_state.selected_cards)))
-            st.session_state.game_cards = pairs + pairs
-            random.shuffle(st.session_state.game_cards)
-            st.session_state.memory_flipped = []
-            st.session_state.memory_matched = []
-            st.session_state.mode = "memory_game"
-            st.rerun()
+        st.write("")
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("⬅ Back to Gallery"):
@@ -492,17 +496,12 @@ elif st.session_state.mode == "memory_game":
     if st.session_state.game_cards:
         num_cards = len(st.session_state.game_cards)
         
-        # Adjust layout based on number of cards
-        if num_cards == 4:
-            num_cols = 2  # 2x2
-        elif num_cards == 8:
-            num_cols = 4  # 2x4
-        else:  # 12 cards
-            num_cols = 4  # 3x4
+        # Always show 4 cards per row
+        num_cols = 4
         
         for row_start in range(0, num_cards, num_cols):
             row_cards = st.session_state.game_cards[row_start:row_start + num_cols]
-            cols = st.columns(num_cols)
+            cols = st.columns(len(row_cards))
             
             for i, url in enumerate(row_cards):
                 card_idx = row_start + i
@@ -514,7 +513,7 @@ elif st.session_state.mode == "memory_game":
                         st.markdown(f"""
                             <div style="position: relative;
                                         width: 100%;
-                                        height: 200px;
+                                        height: 250px;
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -543,7 +542,7 @@ elif st.session_state.mode == "memory_game":
                         # Flipped card - show image
                         st.markdown(f"""
                             <div style="width: 100%;
-                                        height: 200px;
+                                        height: 250px;
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -564,7 +563,7 @@ elif st.session_state.mode == "memory_game":
                             # Create clickable button with card as label
                             button_label = f"""
                             <div style="background: {colors[color_idx]}; 
-                                        height: 200px;
+                                        height: 250px;
                                         border-radius: 10px; 
                                         display: flex; 
                                         flex-direction: column;
@@ -600,12 +599,12 @@ elif st.session_state.mode == "memory_game":
                                 <style>
                                 button[kind="primary"]{{
                                     padding: 0 !important;
-                                    height: 200px !important;
+                                    height: 250px !important;
                                     border: none !important;
                                 }}
                                 </style>
                                 <div style="background: {colors[color_idx]}; 
-                                            height: 200px;
+                                            height: 250px;
                                             border-radius: 10px; 
                                             display: flex; 
                                             flex-direction: column;
@@ -614,7 +613,7 @@ elif st.session_state.mode == "memory_game":
                                             width: 100%;
                                             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
                                             cursor: pointer;
-                                            margin-top: -240px;
+                                            margin-top: -290px;
                                             pointer-events: none;">
                                     <span style="color: white; font-size: 48px; font-weight: bold;">{card_display_num}</span>
                                     <span style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 8px;">{color_names[color_idx]}</span>
