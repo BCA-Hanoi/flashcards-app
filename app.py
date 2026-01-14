@@ -440,8 +440,12 @@ elif st.session_state.mode == "memory_game":
     colors = ["#9B59B6", "#3498DB", "#2ECC71", "#E67E22", "#E74C3C", "#F39C12"]
     color_names = ["Purple", "Blue", "Green", "Orange", "Red", "Yellow"]
     
+    # Add waiting state for wrong matches
+    if "memory_waiting" not in st.session_state:
+        st.session_state.memory_waiting = False
+    
     if st.session_state.game_cards:
-        # Display cards in 4 columns
+        # Display cards in 4 columns with fixed size
         num_cols = 4
         card_num = 0
         
@@ -455,48 +459,94 @@ elif st.session_state.mode == "memory_game":
                 
                 with cols[i]:
                     if card_idx in st.session_state.memory_matched:
-                        # Matched card - show with green border
+                        # Matched card - show with green border and fixed size
                         st.markdown(f"""
-                            <div style="border: 5px solid #00ff00; border-radius: 10px; padding: 5px; background: white;">
-                                <img src="{url}" style="width: 100%; border-radius: 5px;">
+                            <div style="border: 5px solid #00ff00; 
+                                        border-radius: 10px; 
+                                        padding: 5px; 
+                                        background: white;
+                                        width: 100%;
+                                        aspect-ratio: 3/4;
+                                        overflow: hidden;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;">
                             </div>
                         """, unsafe_allow_html=True)
                     elif card_idx in st.session_state.memory_flipped:
-                        # Flipped card - show image
-                        st.image(url, use_container_width=True)
+                        # Flipped card - show image with fixed size
+                        st.markdown(f"""
+                            <div style="width: 100%;
+                                        aspect-ratio: 3/4;
+                                        overflow: hidden;
+                                        border-radius: 10px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        background: white;">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                            </div>
+                        """, unsafe_allow_html=True)
                     else:
-                        # Face-down card - show colored back with number
+                        # Face-down card - show colored back with number (fixed size)
                         card_display_num = card_idx + 1
-                        if st.button(f"{color_names[color_idx]} {card_display_num}", 
-                                   key=f"mem_{card_idx}", 
-                                   use_container_width=True):
-                            st.session_state.memory_flipped.append(card_idx)
-                            
-                            # Check if 2 cards are flipped
-                            if len(st.session_state.memory_flipped) == 2:
-                                idx1, idx2 = st.session_state.memory_flipped
-                                # Check if they match
-                                if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
-                                    st.session_state.memory_matched.extend([idx1, idx2])
-                                    play_sound("correct")
-                                else:
-                                    play_sound("wrong")
-                                st.session_state.memory_flipped = []
-                            
-                            st.rerun()
                         
-                        # Show colored card back preview
+                        # Card back design with fixed aspect ratio
                         st.markdown(f"""
                             <div style="background: {colors[color_idx]}; 
-                                        height: 150px; 
+                                        aspect-ratio: 3/4;
                                         border-radius: 10px; 
                                         display: flex; 
                                         align-items: center; 
                                         justify-content: center;
-                                        margin-top: -10px;">
+                                        width: 100%;
+                                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                                 <span style="color: white; font-size: 48px; font-weight: bold;">{card_display_num}</span>
                             </div>
                         """, unsafe_allow_html=True)
+                        
+                        # Button below card
+                        if not st.session_state.memory_waiting:
+                            if st.button(f"{color_names[color_idx]} {card_display_num}", 
+                                       key=f"mem_{card_idx}", 
+                                       use_container_width=True):
+                                st.session_state.memory_flipped.append(card_idx)
+                                
+                                # Check if 2 cards are flipped
+                                if len(st.session_state.memory_flipped) == 2:
+                                    idx1, idx2 = st.session_state.memory_flipped
+                                    # Check if they match
+                                    if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
+                                        st.session_state.memory_matched.extend([idx1, idx2])
+                                        st.session_state.memory_flipped = []
+                                        play_sound("correct")
+                                    else:
+                                        # Wrong match - set waiting state to show both cards
+                                        st.session_state.memory_waiting = True
+                                
+                                st.rerun()
+    
+    # Handle wrong match waiting period
+    if st.session_state.memory_waiting:
+        play_sound("wrong")
+        st.warning("⏳ Take a look at both cards...")
+        
+        # Auto-hide after delay using JavaScript
+        st.markdown("""
+            <script>
+                setTimeout(function() {
+                    window.location.reload();
+                }, 2000);
+            </script>
+        """, unsafe_allow_html=True)
+        
+        # Reset after showing
+        import time
+        time.sleep(2)
+        st.session_state.memory_flipped = []
+        st.session_state.memory_waiting = False
+        st.rerun()
     
     # Check if game is complete
     if len(st.session_state.memory_matched) == len(st.session_state.game_cards):
@@ -508,10 +558,12 @@ elif st.session_state.mode == "memory_game":
     with col1:
         if st.button("🔄 New Game", use_container_width=True):
             st.session_state.mode = "memory_setup"
+            st.session_state.memory_waiting = False
             st.rerun()
     with col2:
         if st.button("⬅ Back to Gallery", use_container_width=True):
             st.session_state.mode = "gallery"
+            st.session_state.memory_waiting = False
             st.rerun()
 
 
