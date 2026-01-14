@@ -555,13 +555,10 @@ elif st.session_state.mode == "memory_game":
                             </div>
                         """, unsafe_allow_html=True)
                     else:
-                        # Face-down card - clickable
+                        # Face-down card - show colored back
                         card_display_num = card_idx + 1
                         
-                        # Invisible button that triggers on click
-                        if not st.session_state.memory_waiting:
-                            # Create clickable button with card as label
-                            button_label = f"""
+                        st.markdown(f"""
                             <div style="background: {colors[color_idx]}; 
                                         height: 250px;
                                         border-radius: 10px; 
@@ -570,14 +567,17 @@ elif st.session_state.mode == "memory_game":
                                         align-items: center; 
                                         justify-content: center;
                                         width: 100%;
-                                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                                        cursor: pointer;">
-                                <span style="color: white; font-size: 48px; font-weight: bold;">{card_display_num}</span>
-                                <span style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 8px;">{color_names[color_idx]}</span>
+                                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                                <span style="color: white; font-size: 60px; font-weight: bold;">{card_display_num}</span>
+                                <span style="color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 8px;">{color_names[color_idx]}</span>
                             </div>
-                            """
-                            
-                            if st.button(f"card_{card_idx}", key=f"mem_{card_idx}", use_container_width=True):
+                        """, unsafe_allow_html=True)
+                        
+                        # Button below card
+                        if not st.session_state.memory_waiting:
+                            if st.button(f"Click Card {card_display_num}", 
+                                       key=f"mem_{card_idx}", 
+                                       use_container_width=True):
                                 st.session_state.memory_flipped.append(card_idx)
                                 
                                 # Check if 2 cards are flipped
@@ -593,32 +593,6 @@ elif st.session_state.mode == "memory_game":
                                         st.session_state.memory_waiting = True
                                 
                                 st.rerun()
-                            
-                            # Show card design on top of button
-                            st.markdown(f"""
-                                <style>
-                                button[kind="primary"]{{
-                                    padding: 0 !important;
-                                    height: 250px !important;
-                                    border: none !important;
-                                }}
-                                </style>
-                                <div style="background: {colors[color_idx]}; 
-                                            height: 250px;
-                                            border-radius: 10px; 
-                                            display: flex; 
-                                            flex-direction: column;
-                                            align-items: center; 
-                                            justify-content: center;
-                                            width: 100%;
-                                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                                            cursor: pointer;
-                                            margin-top: -290px;
-                                            pointer-events: none;">
-                                    <span style="color: white; font-size: 48px; font-weight: bold;">{card_display_num}</span>
-                                    <span style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 8px;">{color_names[color_idx]}</span>
-                                </div>
-                            """, unsafe_allow_html=True)
     
     # Handle wrong match waiting period
     if st.session_state.memory_waiting:
