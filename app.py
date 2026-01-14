@@ -469,93 +469,99 @@ elif st.session_state.mode == "memory_game":
         st.session_state.memory_waiting = False
     
     if st.session_state.game_cards:
-        # Display cards in 4 columns with fixed size
         num_cards = len(st.session_state.game_cards)
-        num_cols = 4
         
-        # Adjust card height based on number of cards
-        if num_cards <= 4:
-            card_height = "350px"
-        elif num_cards <= 8:
-            card_height = "280px"
-        else:
-            card_height = "220px"
+        # Layout for A4 portrait: prioritize vertical space
+        if num_cards == 4:
+            num_cols = 2  # 2x2
+            card_width = "45%"
+        elif num_cards == 8:
+            num_cols = 4  # 2x4 (4 cards per row)
+            card_width = "22%"
+        else:  # 12 cards
+            num_cols = 4  # 3x4
+            card_width = "22%"
+        
+        # Center the cards with padding
+        st.markdown(f"""
+            <style>
+                .memory-card-container {{
+                    display: flex;
+                    justify-content: center;
+                    gap: 15px;
+                    margin-bottom: 15px;
+                }}
+                .memory-card {{
+                    width: {card_width};
+                    max-width: 200px;
+                }}
+            </style>
+        """, unsafe_allow_html=True)
         
         for row_start in range(0, num_cards, num_cols):
             row_cards = st.session_state.game_cards[row_start:row_start + num_cols]
-            cols = st.columns(num_cols)
+            cols = st.columns([1] + [2]*len(row_cards) + [1])  # Add padding columns
             
             for i, url in enumerate(row_cards):
                 card_idx = row_start + i
                 color_idx = card_idx % len(colors)
                 
-                with cols[i]:
+                with cols[i + 1]:  # Skip first padding column
                     if card_idx in st.session_state.memory_matched:
                         # Matched card - show with green circle overlay
                         st.markdown(f"""
                             <div style="position: relative;
                                         width: 100%;
-                                        height: {card_height};
+                                        aspect-ratio: 2/3;
                                         overflow: hidden;
-                                        border-radius: 10px;
+                                        border-radius: 15px;
                                         display: flex;
                                         align-items: center;
                                         justify-content: center;
-                                        background: white;">
-                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                                        background: white;
+                                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 15px;">
                                 <div style="position: absolute;
                                             top: 50%;
                                             left: 50%;
                                             transform: translate(-50%, -50%);
-                                            width: 80%;
-                                            height: 80%;
-                                            border: 8px solid #00ff00;
+                                            width: 75%;
+                                            height: 75%;
+                                            border: 10px solid #00ff00;
                                             border-radius: 50%;
-                                            background: rgba(0, 255, 0, 0.2);
+                                            background: rgba(0, 255, 0, 0.25);
                                             display: flex;
                                             align-items: center;
                                             justify-content: center;">
-                                    <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
+                                    <span style="color: #00ff00; font-size: 70px; font-weight: bold;">✓</span>
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
                     elif card_idx in st.session_state.memory_flipped:
-                        # Flipped card - show image with fixed size
+                        # Flipped card - show image
                         st.markdown(f"""
                             <div style="width: 100%;
-                                        height: {card_height};
+                                        aspect-ratio: 2/3;
                                         overflow: hidden;
-                                        border-radius: 10px;
+                                        border-radius: 15px;
                                         display: flex;
                                         align-items: center;
                                         justify-content: center;
-                                        background: white;">
-                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                                        background: white;
+                                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 15px;">
                             </div>
                         """, unsafe_allow_html=True)
                     else:
-                        # Face-down card - show colored back with number (fixed size)
+                        # Face-down card - clickable
                         card_display_num = card_idx + 1
                         
-                        # Card back design with fixed aspect ratio
-                        st.markdown(f"""
-                            <div style="background: {colors[color_idx]}; 
-                                        height: {card_height};
-                                        border-radius: 10px; 
-                                        display: flex; 
-                                        align-items: center; 
-                                        justify-content: center;
-                                        width: 100%;
-                                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <span style="color: white; font-size: 48px; font-weight: bold;">{card_display_num}</span>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Button below card
+                        # Button below card (invisible label)
                         if not st.session_state.memory_waiting:
-                            if st.button(f"{color_names[color_idx]} {card_display_num}", 
+                            if st.button(f".", 
                                        key=f"mem_{card_idx}", 
-                                       use_container_width=True):
+                                       use_container_width=True,
+                                       help=f"{color_names[color_idx]} {card_display_num}"):
                                 st.session_state.memory_flipped.append(card_idx)
                                 
                                 # Check if 2 cards are flipped
@@ -571,6 +577,26 @@ elif st.session_state.mode == "memory_game":
                                         st.session_state.memory_waiting = True
                                 
                                 st.rerun()
+                        
+                        # Card design displayed above button with pointer cursor
+                        st.markdown(f"""
+                            <div style="background: {colors[color_idx]}; 
+                                        aspect-ratio: 2/3;
+                                        border-radius: 15px; 
+                                        display: flex; 
+                                        flex-direction: column;
+                                        align-items: center; 
+                                        justify-content: center;
+                                        width: 100%;
+                                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                                        cursor: pointer;
+                                        margin-bottom: -40px;
+                                        position: relative;
+                                        z-index: 1;">
+                                <span style="color: white; font-size: 60px; font-weight: bold;">{card_display_num}</span>
+                                <span style="color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 8px;">{color_names[color_idx]}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
     
     # Handle wrong match waiting period
     if st.session_state.memory_waiting:
