@@ -49,17 +49,24 @@ def clean_filename(filename):
 def play_sound(sound_type):
     """소리 재생 함수"""
     if sound_type == "correct":
-        # 딩동댕 소리
+        # 딩동댕 소리 - 성공음
         st.markdown("""
             <audio autoplay>
-                <source src="https://www.soundjay.com/buttons/sounds/button-09.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
             </audio>
         """, unsafe_allow_html=True)
     elif sound_type == "wrong":
-        # 삑 소리
+        # 삑 소리 - 오답음
         st.markdown("""
             <audio autoplay>
-                <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+    elif sound_type == "celebration":
+        # 와아~ 축하 소리
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" type="audio/mpeg">
             </audio>
         """, unsafe_allow_html=True)
 
@@ -135,54 +142,61 @@ if st.session_state.mode == "home":
         "Flashcards",
         placeholder="e.g., bucket, apple, maze, rabbit",
         label_visibility="collapsed",
-        key="word_input"
+        key="word_input",
+        on_change=None  # Will process on Enter
     )
 
     # ✅ Check Existing Words button
-    if st.button("🔍 Check Existing Words"):
-        if words:
-            all_files = get_files_from_folder(FOLDER_ID)
+    col1, col2 = st.columns([1, 3])
+    
+    with col1:
+        check_button = st.button("🔍 Check Existing Words", use_container_width=True)
+    
+    if check_button and words:
+        all_files = get_files_from_folder(FOLDER_ID)
+        
+        # 파일명 매핑 (중복 허용)
+        file_map = {}
+        for f in all_files:
+            clean_name = clean_filename(f["name"])
+            if clean_name not in file_map:
+                file_map[clean_name] = []
+            file_map[clean_name].append({
+                "id": f["id"],
+                "original_name": f["name"]
+            })
+        
+        input_words = [w.strip().lower() for w in words.split(",")]
+        found_words = []
+        not_found = []
+        
+        for word in input_words:
+            if word in file_map:
+                found_words.append(f"{word} ({len(file_map[word])} cards)")
+            else:
+                not_found.append(word)
+        
+        # 결과 표시
+        st.markdown("---")
+        if found_words:
+            st.success(f"✅ **Found ({len(found_words)} words):**")
+            st.write(", ".join(found_words))
+        
+        if not_found:
+            st.error(f"❌ **Not Found ({len(not_found)} words):**")
+            st.write(", ".join(not_found))
             
-            # 파일명 매핑 (중복 허용)
-            file_map = {}
-            for f in all_files:
-                clean_name = clean_filename(f["name"])
-                if clean_name not in file_map:
-                    file_map[clean_name] = []
-                file_map[clean_name].append({
-                    "id": f["id"],
-                    "original_name": f["name"]
-                })
-            
-            input_words = [w.strip().lower() for w in words.split(",")]
-            found_words = {}
-            not_found = []
-            
-            for word in input_words:
-                if word in file_map:
-                    found_words[word] = file_map[word]
-                else:
-                    not_found.append(word)
-            
-            # 결과 표시
-            st.markdown("---")
-            if found_words:
-                st.success(f"✅ **Found ({len(found_words)} words):**")
-                for word, files in found_words.items():
-                    st.write(f"**{word}** ({len(files)}장)")
-                    cols = st.columns(min(len(files), 5))
-                    for i, file_info in enumerate(files[:5]):
-                        with cols[i]:
-                            url = f"https://drive.google.com/thumbnail?id={file_info['id']}&sz=w200"
-                            st.image(url, caption=file_info['original_name'], use_container_width=True)
-            
-            if not_found:
-                st.error(f"❌ **Not Found ({len(not_found)} words):**")
-                st.write(", ".join(not_found))
-        else:
-            st.warning("⚠️ Please enter some words first.")
+            # Copy button for missing words
+            missing_text = ", ".join(not_found)
+            st.code(missing_text, language=None)
+            if st.button("📋 Copy Missing Words to Clipboard"):
+                st.write("Copy this text: " + missing_text)
+    
+    elif not words and check_button:
+        st.warning("⚠️ Please enter some words first.")
 
-    if words:
+    # Process words when entered (on Enter key or after input)
+    if words and not check_button:
         all_files = get_files_from_folder(FOLDER_ID)
 
         # 파일명 매핑 (중복 허용)
@@ -371,21 +385,21 @@ elif st.session_state.mode == "slap_board":
                     if card_idx in st.session_state.slap_answered:
                         # Show trophy instead of card
                         st.markdown("""
-                            <div style="text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                                 <div style="font-size: 80px;">🏆</div>
                                 <div style="color: white; font-size: 24px; font-weight: bold; margin-top: 10px;">Correct!</div>
                             </div>
                         """, unsafe_allow_html=True)
                     else:
-                        # Make card clickable
+                        # Make card clickable (A4 ratio)
                         if st.button(f"Select Card {card_idx + 1}", key=f"slap_card_{card_idx}", use_container_width=True):
                             st.session_state.selected_slap_card = card_idx
                             st.rerun()
                         
-                        # Display card image on top of button
+                        # Display card image on top of button with A4 ratio
                         st.markdown(f"""
                             <div style="margin-top: -40px; pointer-events: none;">
-                                <img src="{url}" style="width: 100%; height: 300px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                                <img src="{url}" style="width: 100%; height: 350px; object-fit: contain; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); background: white;">
                             </div>
                         """, unsafe_allow_html=True)
         
@@ -509,11 +523,11 @@ elif st.session_state.mode == "memory_game":
                 
                 with cols[i]:
                     if card_idx in st.session_state.memory_matched:
-                        # Matched card - show with green circle overlay
+                        # Matched card - show with green circle overlay (A4 ratio: 1:1.414)
                         st.markdown(f"""
                             <div style="position: relative;
                                         width: 100%;
-                                        height: 250px;
+                                        height: 300px;
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -521,7 +535,7 @@ elif st.session_state.mode == "memory_game":
                                         justify-content: center;
                                         background: white;
                                         box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 10px;">
                                 <div style="position: absolute;
                                             top: 50%;
                                             left: 50%;
@@ -539,10 +553,10 @@ elif st.session_state.mode == "memory_game":
                             </div>
                         """, unsafe_allow_html=True)
                     elif card_idx in st.session_state.memory_flipped:
-                        # Flipped card - show image
+                        # Flipped card - show image (A4 ratio)
                         st.markdown(f"""
                             <div style="width: 100%;
-                                        height: 250px;
+                                        height: 300px;
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -551,16 +565,16 @@ elif st.session_state.mode == "memory_game":
                                         background: white;
                                         border: 3px solid gold;
                                         box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 10px;">
                             </div>
                         """, unsafe_allow_html=True)
                     else:
-                        # Face-down card - show colored back
+                        # Face-down card - show colored back (A4 ratio)
                         card_display_num = card_idx + 1
                         
                         st.markdown(f"""
                             <div style="background: {colors[color_idx]}; 
-                                        height: 250px;
+                                        height: 300px;
                                         border-radius: 10px; 
                                         display: flex; 
                                         flex-direction: column;
@@ -618,6 +632,7 @@ elif st.session_state.mode == "memory_game":
     # Check if game is complete
     if len(st.session_state.memory_matched) == len(st.session_state.game_cards):
         st.success("🎉 You found all pairs!")
+        play_sound("celebration")
         st.balloons()
     
     st.markdown("<br>", unsafe_allow_html=True)
