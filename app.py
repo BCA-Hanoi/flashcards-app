@@ -3,7 +3,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import random
 import re
-import time
+import base64
 
 # ==============================
 # Google Drive 연결 설정 (Secrets 사용)
@@ -46,10 +46,60 @@ def clean_filename(filename):
     return name.strip().lower()
 
 
+def play_sound(sound_type):
+    """소리 재생 함수"""
+    if sound_type == "correct":
+        # 딩동댕 소리
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://www.soundjay.com/buttons/sounds/button-09.mp3" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+    elif sound_type == "wrong":
+        # 삑 소리
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+
+
 # ==============================
 # Streamlit UI 설정
 # ==============================
 st.set_page_config(page_title="BCA Flashcards", layout="wide")
+
+# 반응형 CSS 추가
+st.markdown("""
+    <style>
+        /* 반응형 이미지 크기 조정 */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* 모바일 */
+        @media (max-width: 768px) {
+            .stImage img {
+                max-height: 300px;
+            }
+        }
+        
+        /* 태블릿 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .stImage img {
+                max-height: 400px;
+            }
+        }
+        
+        /* 데스크톱 */
+        @media (min-width: 1025px) {
+            .stImage img {
+                max-height: 500px;
+            }
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Session State 초기화
 if "mode" not in st.session_state:
@@ -66,15 +116,19 @@ if "game_score" not in st.session_state:
     st.session_state.game_score = 0
 if "missing_card_idx" not in st.session_state:
     st.session_state.missing_card_idx = None
-if "speed_quiz_index" not in st.session_state:
-    st.session_state.speed_quiz_index = 0
+if "slap_answered" not in st.session_state:
+    st.session_state.slap_answered = []
+if "memory_flipped" not in st.session_state:
+    st.session_state.memory_flipped = []
+if "memory_matched" not in st.session_state:
+    st.session_state.memory_matched = []
 
 
 # ==============================
 # 1단계: 단어 입력 화면
 # ==============================
 if st.session_state.mode == "home":
-    st.title("🎴 BCA Flashcards")
+    st.title("📚 BCA Flashcards")
     st.subheader("Type words (comma separated), then press Enter.")
 
     words = st.text_input(
@@ -84,7 +138,7 @@ if st.session_state.mode == "home":
         key="word_input"
     )
 
-    # ✅ Check Existing Words 버튼
+    # ✅ Check Existing Words button
     if st.button("🔍 Check Existing Words"):
         if words:
             all_files = get_files_from_folder(FOLDER_ID)
@@ -158,8 +212,8 @@ if st.session_state.mode == "home":
 # 2단계: 갤러리 미리보기 화면
 # ==============================
 elif st.session_state.mode == "gallery":
-    st.title("🎴 BCA Flashcards")
-    st.subheader("Preview your flashcards below. Select the ones you want.")
+    st.title("📚 BCA Flashcards")
+    st.subheader("Preview your flashcards. Select the ones you want.")
 
     # -------------------------
     # Add More 입력창 토글
@@ -194,7 +248,7 @@ elif st.session_state.mode == "gallery":
                 for w in [w.strip().lower() for w in new_words.split(",")]:
                     if w in file_map:
                         for file_id in file_map[w]:
-                            to_add.append(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
+                            to_add.append(f"https://drive.google.com/thumbnail?id={file_id}&sz=w800")
 
                 if to_add:
                     st.session_state.cards = list(dict.fromkeys(st.session_state.cards + to_add))
@@ -202,7 +256,7 @@ elif st.session_state.mode == "gallery":
                 st.rerun()
 
     # -------------------------
-    # 갤러리
+    # Gallery
     # -------------------------
     if st.session_state.cards:
         new_selection = []
@@ -220,71 +274,200 @@ elif st.session_state.mode == "gallery":
         st.session_state.selected_cards = new_selection
 
         # -------------------------
-        # 버튼들
+        # Game Buttons
         # -------------------------
         st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 🎮 Games & Activities")
         
-        col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("▶ Presentation"):
+            if st.button("▶ Presentation", use_container_width=True):
                 st.session_state.mode = "present"
                 st.session_state.current = 0
                 st.rerun()
         
         with col2:
-            if st.button("🎲 Random 2"):
-                if len(st.session_state.selected_cards) >= 2:
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 2)
-                    st.session_state.mode = "random_show"
-                    st.rerun()
-        
-        with col3:
-            if st.button("🎲 Random 4"):
-                if len(st.session_state.selected_cards) >= 4:
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 4)
-                    st.session_state.mode = "random_show"
-                    st.rerun()
-        
-        with col4:
-            if st.button("🎲 Random 6"):
-                if len(st.session_state.selected_cards) >= 6:
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 6)
-                    st.session_state.mode = "random_show"
-                    st.rerun()
-        
-        with col5:
-            if st.button("🔍 Hide & Seek"):
+            if st.button("🔍 Hide & Seek", use_container_width=True):
                 if st.session_state.selected_cards:
                     st.session_state.mode = "hide_seek"
                     st.session_state.current = 0
                     st.session_state.zoom_level = 1
                     st.rerun()
         
-        with col6:
-            if st.button("🤔 What's Missing"):
+        with col3:
+            if st.button("🤔 What's Missing", use_container_width=True):
                 if len(st.session_state.selected_cards) >= 5:
                     st.session_state.mode = "whats_missing"
                     st.session_state.game_cards = random.sample(st.session_state.selected_cards, min(6, len(st.session_state.selected_cards)))
                     st.session_state.missing_card_idx = None
                     st.rerun()
         
-        with col7:
-            if st.button("⚡ Speed Quiz"):
-                if st.session_state.selected_cards:
-                    st.session_state.mode = "speed_quiz"
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, min(10, len(st.session_state.selected_cards)))
-                    st.session_state.speed_quiz_index = 0
+        with col4:
+            if st.button("🧠 Memory Game", use_container_width=True):
+                if len(st.session_state.selected_cards) >= 4:
+                    st.session_state.mode = "memory_game"
+                    # Duplicate cards for matching
+                    pairs = random.sample(st.session_state.selected_cards, min(8, len(st.session_state.selected_cards)))
+                    st.session_state.game_cards = pairs + pairs  # Double for pairs
+                    random.shuffle(st.session_state.game_cards)
+                    st.session_state.memory_flipped = []
+                    st.session_state.memory_matched = []
                     st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🏠 Home"):
+        st.markdown("### 🎯 Slap the Board Game")
+        st.write("Select number of cards to show:")
+        
+        slap_cols = st.columns(10)
+        for i in range(10):
+            with slap_cols[i]:
+                if st.button(f"{i+1}", key=f"slap_{i+1}", use_container_width=True):
+                    if len(st.session_state.selected_cards) >= i+1:
+                        st.session_state.mode = "slap_board"
+                        st.session_state.game_cards = random.sample(st.session_state.selected_cards, i+1)
+                        st.session_state.slap_answered = []
+                        st.rerun()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🏠 Home", use_container_width=True):
             st.session_state.mode = "home"
             st.rerun()
 
 
 # ==============================
-# 3단계: Presentation 전체화면 모드
+# Slap the Board Game
+# ==============================
+elif st.session_state.mode == "slap_board":
+    st.title("🎯 Slap the Board!")
+    st.subheader(f"Find the correct card! ({len(st.session_state.game_cards)} cards)")
+    
+    if st.session_state.game_cards:
+        # Calculate grid layout
+        num_cards = len(st.session_state.game_cards)
+        cols_per_row = min(5, num_cards)
+        
+        # Display cards in grid
+        for row_start in range(0, num_cards, cols_per_row):
+            row_cards = st.session_state.game_cards[row_start:row_start + cols_per_row]
+            cols = st.columns(len(row_cards))
+            
+            for i, url in enumerate(row_cards):
+                card_idx = row_start + i
+                with cols[i]:
+                    if card_idx in st.session_state.slap_answered:
+                        # Show trophy instead of card
+                        st.markdown("""
+                            <div style="text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px;">
+                                <div style="font-size: 80px;">🏆</div>
+                                <div style="color: white; font-size: 24px; font-weight: bold; margin-top: 10px;">Correct!</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.image(url, use_container_width=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Control buttons
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("✅ Correct!", use_container_width=True, key="correct_btn"):
+                # Mark current card as answered (you can track which one was selected)
+                # For simplicity, we'll mark the first unanswered card
+                for idx in range(len(st.session_state.game_cards)):
+                    if idx not in st.session_state.slap_answered:
+                        st.session_state.slap_answered.append(idx)
+                        break
+                play_sound("correct")
+                st.rerun()
+        
+        with col2:
+            if st.button("❌ Wrong!", use_container_width=True, key="wrong_btn"):
+                play_sound("wrong")
+                st.rerun()
+        
+        with col3:
+            if st.button("➡ Next Round", use_container_width=True):
+                st.session_state.game_cards = random.sample(st.session_state.selected_cards, len(st.session_state.game_cards))
+                st.session_state.slap_answered = []
+                st.rerun()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("⬅ Back to Gallery"):
+        st.session_state.mode = "gallery"
+        st.rerun()
+
+
+# ==============================
+# Memory Game
+# ==============================
+elif st.session_state.mode == "memory_game":
+    st.title("🧠 Memory Game")
+    st.subheader("Find matching pairs!")
+    
+    if st.session_state.game_cards:
+        # Display cards in 4 columns
+        num_cols = 4
+        for row_start in range(0, len(st.session_state.game_cards), num_cols):
+            row_cards = st.session_state.game_cards[row_start:row_start + num_cols]
+            cols = st.columns(num_cols)
+            
+            for i, url in enumerate(row_cards):
+                card_idx = row_start + i
+                with cols[i]:
+                    if card_idx in st.session_state.memory_matched:
+                        # Matched card - show with green border
+                        st.markdown("""
+                            <div style="border: 5px solid #00ff00; border-radius: 10px; padding: 5px;">
+                        """, unsafe_allow_html=True)
+                        st.image(url, use_container_width=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
+                    elif card_idx in st.session_state.memory_flipped:
+                        # Flipped card - show image
+                        st.image(url, use_container_width=True)
+                    else:
+                        # Face-down card - show as button
+                        if st.button("❓", key=f"mem_{card_idx}", use_container_width=True):
+                            st.session_state.memory_flipped.append(card_idx)
+                            
+                            # Check if 2 cards are flipped
+                            if len(st.session_state.memory_flipped) == 2:
+                                idx1, idx2 = st.session_state.memory_flipped
+                                # Check if they match
+                                if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
+                                    st.session_state.memory_matched.extend([idx1, idx2])
+                                    play_sound("correct")
+                                st.session_state.memory_flipped = []
+                            
+                            st.rerun()
+    
+    # Check if game is complete
+    if len(st.session_state.memory_matched) == len(st.session_state.game_cards):
+        st.success("🎉 You found all pairs!")
+        st.balloons()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 New Game", use_container_width=True):
+            pairs = random.sample(st.session_state.selected_cards, min(8, len(st.session_state.selected_cards)))
+            st.session_state.game_cards = pairs + pairs
+            random.shuffle(st.session_state.game_cards)
+            st.session_state.memory_flipped = []
+            st.session_state.memory_matched = []
+            st.rerun()
+    with col2:
+        if st.button("⬅ Back to Gallery", use_container_width=True):
+            st.session_state.mode = "gallery"
+            st.rerun()
+
+
+# ==============================
+# Presentation Mode
+# ==============================
+# ==============================
+# Presentation Mode
 # ==============================
 elif st.session_state.mode == "present":
     st.markdown(
@@ -332,33 +515,7 @@ elif st.session_state.mode == "present":
 
 
 # ==============================
-# Random Show Mode (2/4/6개 랜덤)
-# ==============================
-elif st.session_state.mode == "random_show":
-    st.title("🎲 Random Cards")
-    
-    if st.session_state.game_cards:
-        cols = st.columns(len(st.session_state.game_cards))
-        for i, url in enumerate(st.session_state.game_cards):
-            with cols[i]:
-                st.image(url, use_container_width=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Shuffle Again"):
-            num = len(st.session_state.game_cards)
-            if len(st.session_state.selected_cards) >= num:
-                st.session_state.game_cards = random.sample(st.session_state.selected_cards, num)
-                st.rerun()
-    with col2:
-        if st.button("⬅ Back to Gallery"):
-            st.session_state.mode = "gallery"
-            st.rerun()
-
-
-# ==============================
-# Hide & Seek Game (숨은 그림 찾기)
+# Hide & Seek Game
 # ==============================
 elif st.session_state.mode == "hide_seek":
     st.title("🔍 Hide & Seek - Guess the Card!")
@@ -366,15 +523,7 @@ elif st.session_state.mode == "hide_seek":
     if st.session_state.selected_cards:
         current_card = st.session_state.selected_cards[st.session_state.current]
         
-        # 줌 레벨에 따른 크기 조절 (1=매우 확대, 4=전체)
-        zoom_sizes = {
-            1: "?sz=w1000",  # 원본 크기로 표시하되 CSS로 확대
-            2: "?sz=w1000",
-            3: "?sz=w1000",
-            4: "?sz=w1000"
-        }
-        
-        # CSS로 이미지 크롭/확대 효과
+        # Zoom styles
         zoom_styles = {
             1: "transform: scale(4); object-fit: cover; height: 400px; width: 400px; object-position: 30% 30%;",
             2: "transform: scale(2.5); object-fit: cover; height: 500px; width: 500px; object-position: 40% 40%;",
@@ -384,7 +533,7 @@ elif st.session_state.mode == "hide_seek":
         
         st.markdown(f"""
             <div style="display: flex; justify-content: center; align-items: center; overflow: hidden; height: 500px; background: #f0f0f0; border-radius: 10px;">
-                <img src="{current_card}{zoom_sizes[st.session_state.zoom_level]}" 
+                <img src="{current_card}?sz=w800" 
                      style="{zoom_styles[st.session_state.zoom_level]} border-radius: 10px;">
             </div>
         """, unsafe_allow_html=True)
@@ -460,65 +609,3 @@ elif st.session_state.mode == "whats_missing":
     if st.button("⬅ Back to Gallery"):
         st.session_state.mode = "gallery"
         st.rerun()
-
-
-# ==============================
-# Speed Quiz Game
-# ==============================
-elif st.session_state.mode == "speed_quiz":
-    st.title("⚡ Speed Quiz!")
-    
-    if st.session_state.speed_quiz_index < len(st.session_state.game_cards):
-        current_card = st.session_state.game_cards[st.session_state.speed_quiz_index]
-        
-        # 진행 상황 표시
-        st.progress((st.session_state.speed_quiz_index + 1) / len(st.session_state.game_cards))
-        st.subheader(f"Card {st.session_state.speed_quiz_index + 1} / {len(st.session_state.game_cards)}")
-        
-        # 카드 표시
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.image(current_card, use_container_width=True)
-        
-        # 자동 넘김 (3초)
-        time.sleep(0.1)  # 약간의 딜레이
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("➡ Next (or wait 3 sec)", use_container_width=True, key="next_card"):
-                st.session_state.speed_quiz_index += 1
-                st.rerun()
-        
-        with col2:
-            if st.button("⏸ Pause", use_container_width=True):
-                st.session_state.mode = "gallery"
-                st.rerun()
-        
-        # 자동 타이머 (JavaScript)
-        st.markdown("""
-            <script>
-                setTimeout(function() {
-                    window.location.reload();
-                }, 3000);
-            </script>
-        """, unsafe_allow_html=True)
-    
-    else:
-        st.success("🎉 Quiz Complete!")
-        st.balloons()
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔄 Play Again", use_container_width=True):
-                st.session_state.game_cards = random.sample(st.session_state.selected_cards, min(10, len(st.session_state.selected_cards)))
-                st.session_state.speed_quiz_index = 0
-                st.rerun()
-        
-        with col2:
-            if st.button("⬅ Back to Gallery", use_container_width=True):
-                st.session_state.mode = "gallery"
-                st.rerun()
