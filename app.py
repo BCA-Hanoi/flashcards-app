@@ -305,15 +305,31 @@ elif st.session_state.mode == "gallery":
         st.markdown("### 🎯 Slap the Board Game")
         st.write("Select number of cards to show:")
         
-        slap_cols = st.columns(10)
-        for i in range(10):
-            with slap_cols[i]:
-                if st.button(f"{i+1}", key=f"slap_{i+1}", use_container_width=True):
-                    if len(st.session_state.selected_cards) >= i+1:
-                        st.session_state.mode = "slap_board"
-                        st.session_state.game_cards = random.sample(st.session_state.selected_cards, i+1)
-                        st.session_state.slap_answered = []
-                        st.rerun()
+        slap_cols = st.columns(3)
+        
+        with slap_cols[0]:
+            if st.button("4 Cards (2x2)", key="slap_4", use_container_width=True):
+                if len(st.session_state.selected_cards) >= 4:
+                    st.session_state.mode = "slap_board"
+                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 4)
+                    st.session_state.slap_answered = []
+                    st.rerun()
+        
+        with slap_cols[1]:
+            if st.button("6 Cards (2x3)", key="slap_6", use_container_width=True):
+                if len(st.session_state.selected_cards) >= 6:
+                    st.session_state.mode = "slap_board"
+                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 6)
+                    st.session_state.slap_answered = []
+                    st.rerun()
+        
+        with slap_cols[2]:
+            if st.button("8 Cards (4x2)", key="slap_8", use_container_width=True):
+                if len(st.session_state.selected_cards) >= 8:
+                    st.session_state.mode = "slap_board"
+                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 8)
+                    st.session_state.slap_answered = []
+                    st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🏠 Home", use_container_width=True):
@@ -332,9 +348,17 @@ elif st.session_state.mode == "slap_board":
         st.session_state.selected_card_idx = None
     
     if st.session_state.game_cards:
-        # Calculate grid layout
         num_cards = len(st.session_state.game_cards)
-        cols_per_row = min(5, num_cards)
+        
+        # Determine grid layout
+        if num_cards == 4:
+            cols_per_row = 2  # 2x2
+        elif num_cards == 6:
+            cols_per_row = 3  # 2x3
+        elif num_cards == 8:
+            cols_per_row = 4  # 4x2
+        else:
+            cols_per_row = min(5, num_cards)
         
         # Display cards in grid
         for row_start in range(0, num_cards, cols_per_row):
@@ -446,10 +470,18 @@ elif st.session_state.mode == "memory_game":
     
     if st.session_state.game_cards:
         # Display cards in 4 columns with fixed size
+        num_cards = len(st.session_state.game_cards)
         num_cols = 4
-        card_num = 0
         
-        for row_start in range(0, len(st.session_state.game_cards), num_cols):
+        # Adjust card height based on number of cards
+        if num_cards <= 4:
+            card_height = "350px"
+        elif num_cards <= 8:
+            card_height = "280px"
+        else:
+            card_height = "220px"
+        
+        for row_start in range(0, num_cards, num_cols):
             row_cards = st.session_state.game_cards[row_start:row_start + num_cols]
             cols = st.columns(num_cols)
             
@@ -459,26 +491,39 @@ elif st.session_state.mode == "memory_game":
                 
                 with cols[i]:
                     if card_idx in st.session_state.memory_matched:
-                        # Matched card - show with green border and fixed size
+                        # Matched card - show with green circle overlay
                         st.markdown(f"""
-                            <div style="border: 5px solid #00ff00; 
-                                        border-radius: 10px; 
-                                        padding: 5px; 
-                                        background: white;
+                            <div style="position: relative;
                                         width: 100%;
-                                        aspect-ratio: 3/4;
+                                        height: {card_height};
                                         overflow: hidden;
+                                        border-radius: 10px;
                                         display: flex;
                                         align-items: center;
-                                        justify-content: center;">
-                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;">
+                                        justify-content: center;
+                                        background: white;">
+                                <img src="{url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                                <div style="position: absolute;
+                                            top: 50%;
+                                            left: 50%;
+                                            transform: translate(-50%, -50%);
+                                            width: 80%;
+                                            height: 80%;
+                                            border: 8px solid #00ff00;
+                                            border-radius: 50%;
+                                            background: rgba(0, 255, 0, 0.2);
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;">
+                                    <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
+                                </div>
                             </div>
                         """, unsafe_allow_html=True)
                     elif card_idx in st.session_state.memory_flipped:
                         # Flipped card - show image with fixed size
                         st.markdown(f"""
                             <div style="width: 100%;
-                                        aspect-ratio: 3/4;
+                                        height: {card_height};
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -495,7 +540,7 @@ elif st.session_state.mode == "memory_game":
                         # Card back design with fixed aspect ratio
                         st.markdown(f"""
                             <div style="background: {colors[color_idx]}; 
-                                        aspect-ratio: 3/4;
+                                        height: {card_height};
                                         border-radius: 10px; 
                                         display: flex; 
                                         align-items: center; 
