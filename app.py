@@ -279,7 +279,7 @@ elif st.session_state.mode == "gallery":
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("### 🎮 Games & Activities")
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             if st.button("▶ Presentation", use_container_width=True):
@@ -296,23 +296,9 @@ elif st.session_state.mode == "gallery":
                     st.rerun()
         
         with col3:
-            if st.button("🤔 What's Missing", use_container_width=True):
-                if len(st.session_state.selected_cards) >= 5:
-                    st.session_state.mode = "whats_missing"
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, min(6, len(st.session_state.selected_cards)))
-                    st.session_state.missing_card_idx = None
-                    st.rerun()
-        
-        with col4:
             if st.button("🧠 Memory Game", use_container_width=True):
                 if len(st.session_state.selected_cards) >= 4:
-                    st.session_state.mode = "memory_game"
-                    # Duplicate cards for matching
-                    pairs = random.sample(st.session_state.selected_cards, min(8, len(st.session_state.selected_cards)))
-                    st.session_state.game_cards = pairs + pairs  # Double for pairs
-                    random.shuffle(st.session_state.game_cards)
-                    st.session_state.memory_flipped = []
-                    st.session_state.memory_matched = []
+                    st.session_state.mode = "memory_setup"
                     st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -342,6 +328,9 @@ elif st.session_state.mode == "slap_board":
     st.title("🎯 Slap the Board!")
     st.subheader(f"Find the correct card! ({len(st.session_state.game_cards)} cards)")
     
+    if "selected_card_idx" not in st.session_state:
+        st.session_state.selected_card_idx = None
+    
     if st.session_state.game_cards:
         # Calculate grid layout
         num_cards = len(st.session_state.game_cards)
@@ -365,33 +354,74 @@ elif st.session_state.mode == "slap_board":
                         """, unsafe_allow_html=True)
                     else:
                         st.image(url, use_container_width=True)
+                        
+                        # Selection buttons for each card
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            if st.button("✅", key=f"correct_{card_idx}", use_container_width=True):
+                                st.session_state.slap_answered.append(card_idx)
+                                play_sound("correct")
+                                st.rerun()
+                        with col_b:
+                            if st.button("❌", key=f"wrong_{card_idx}", use_container_width=True):
+                                play_sound("wrong")
+                                st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         # Control buttons
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("✅ Correct!", use_container_width=True, key="correct_btn"):
-                # Mark current card as answered (you can track which one was selected)
-                # For simplicity, we'll mark the first unanswered card
-                for idx in range(len(st.session_state.game_cards)):
-                    if idx not in st.session_state.slap_answered:
-                        st.session_state.slap_answered.append(idx)
-                        break
-                play_sound("correct")
-                st.rerun()
-        
-        with col2:
-            if st.button("❌ Wrong!", use_container_width=True, key="wrong_btn"):
-                play_sound("wrong")
-                st.rerun()
-        
-        with col3:
             if st.button("➡ Next Round", use_container_width=True):
                 st.session_state.game_cards = random.sample(st.session_state.selected_cards, len(st.session_state.game_cards))
                 st.session_state.slap_answered = []
                 st.rerun()
+        
+        with col2:
+            if st.button("⬅ Back to Gallery", use_container_width=True):
+                st.session_state.mode = "gallery"
+                st.rerun()
+
+
+# ==============================
+# Memory Game Setup
+# ==============================
+elif st.session_state.mode == "memory_setup":
+    st.title("🧠 Memory Game Setup")
+    st.subheader("How many pairs do you want?")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("4 Cards (2 pairs)", use_container_width=True):
+            pairs = random.sample(st.session_state.selected_cards, min(2, len(st.session_state.selected_cards)))
+            st.session_state.game_cards = pairs + pairs
+            random.shuffle(st.session_state.game_cards)
+            st.session_state.memory_flipped = []
+            st.session_state.memory_matched = []
+            st.session_state.mode = "memory_game"
+            st.rerun()
+    
+    with col2:
+        if st.button("8 Cards (4 pairs)", use_container_width=True):
+            pairs = random.sample(st.session_state.selected_cards, min(4, len(st.session_state.selected_cards)))
+            st.session_state.game_cards = pairs + pairs
+            random.shuffle(st.session_state.game_cards)
+            st.session_state.memory_flipped = []
+            st.session_state.memory_matched = []
+            st.session_state.mode = "memory_game"
+            st.rerun()
+    
+    with col3:
+        if st.button("12 Cards (6 pairs)", use_container_width=True):
+            pairs = random.sample(st.session_state.selected_cards, min(6, len(st.session_state.selected_cards)))
+            st.session_state.game_cards = pairs + pairs
+            random.shuffle(st.session_state.game_cards)
+            st.session_state.memory_flipped = []
+            st.session_state.memory_matched = []
+            st.session_state.mode = "memory_game"
+            st.rerun()
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("⬅ Back to Gallery"):
@@ -406,29 +436,40 @@ elif st.session_state.mode == "memory_game":
     st.title("🧠 Memory Game")
     st.subheader("Find matching pairs!")
     
+    # Card back colors and numbers
+    colors = ["#9B59B6", "#3498DB", "#2ECC71", "#E67E22", "#E74C3C", "#F39C12"]
+    color_names = ["Purple", "Blue", "Green", "Orange", "Red", "Yellow"]
+    
     if st.session_state.game_cards:
         # Display cards in 4 columns
         num_cols = 4
+        card_num = 0
+        
         for row_start in range(0, len(st.session_state.game_cards), num_cols):
             row_cards = st.session_state.game_cards[row_start:row_start + num_cols]
             cols = st.columns(num_cols)
             
             for i, url in enumerate(row_cards):
                 card_idx = row_start + i
+                color_idx = card_idx % len(colors)
+                
                 with cols[i]:
                     if card_idx in st.session_state.memory_matched:
                         # Matched card - show with green border
-                        st.markdown("""
-                            <div style="border: 5px solid #00ff00; border-radius: 10px; padding: 5px;">
+                        st.markdown(f"""
+                            <div style="border: 5px solid #00ff00; border-radius: 10px; padding: 5px; background: white;">
+                                <img src="{url}" style="width: 100%; border-radius: 5px;">
+                            </div>
                         """, unsafe_allow_html=True)
-                        st.image(url, use_container_width=True)
-                        st.markdown("</div>", unsafe_allow_html=True)
                     elif card_idx in st.session_state.memory_flipped:
                         # Flipped card - show image
                         st.image(url, use_container_width=True)
                     else:
-                        # Face-down card - show as button
-                        if st.button("❓", key=f"mem_{card_idx}", use_container_width=True):
+                        # Face-down card - show colored back with number
+                        card_display_num = card_idx + 1
+                        if st.button(f"{color_names[color_idx]} {card_display_num}", 
+                                   key=f"mem_{card_idx}", 
+                                   use_container_width=True):
                             st.session_state.memory_flipped.append(card_idx)
                             
                             # Check if 2 cards are flipped
@@ -438,9 +479,24 @@ elif st.session_state.mode == "memory_game":
                                 if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
                                     st.session_state.memory_matched.extend([idx1, idx2])
                                     play_sound("correct")
+                                else:
+                                    play_sound("wrong")
                                 st.session_state.memory_flipped = []
                             
                             st.rerun()
+                        
+                        # Show colored card back preview
+                        st.markdown(f"""
+                            <div style="background: {colors[color_idx]}; 
+                                        height: 150px; 
+                                        border-radius: 10px; 
+                                        display: flex; 
+                                        align-items: center; 
+                                        justify-content: center;
+                                        margin-top: -10px;">
+                                <span style="color: white; font-size: 48px; font-weight: bold;">{card_display_num}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
     
     # Check if game is complete
     if len(st.session_state.memory_matched) == len(st.session_state.game_cards):
@@ -451,11 +507,7 @@ elif st.session_state.mode == "memory_game":
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔄 New Game", use_container_width=True):
-            pairs = random.sample(st.session_state.selected_cards, min(8, len(st.session_state.selected_cards)))
-            st.session_state.game_cards = pairs + pairs
-            random.shuffle(st.session_state.game_cards)
-            st.session_state.memory_flipped = []
-            st.session_state.memory_matched = []
+            st.session_state.mode = "memory_setup"
             st.rerun()
     with col2:
         if st.button("⬅ Back to Gallery", use_container_width=True):
@@ -566,46 +618,5 @@ elif st.session_state.mode == "hide_seek":
 
 
 # ==============================
-# What's Missing Game
+# What's Missing Game - REMOVED
 # ==============================
-elif st.session_state.mode == "whats_missing":
-    st.title("🤔 What's Missing?")
-    
-    if st.session_state.missing_card_idx is None:
-        st.subheader("Remember these cards!")
-        cols = st.columns(len(st.session_state.game_cards))
-        for i, url in enumerate(st.session_state.game_cards):
-            with cols[i]:
-                st.image(url, use_container_width=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("✅ Ready! Hide One Card", use_container_width=True):
-            st.session_state.missing_card_idx = random.randint(0, len(st.session_state.game_cards) - 1)
-            st.rerun()
-    
-    else:
-        st.subheader("Which card is missing?")
-        remaining_cards = [card for i, card in enumerate(st.session_state.game_cards) if i != st.session_state.missing_card_idx]
-        
-        cols = st.columns(len(remaining_cards))
-        for i, url in enumerate(remaining_cards):
-            with cols[i]:
-                st.image(url, use_container_width=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("👀 Show Answer", use_container_width=True):
-                st.image(st.session_state.game_cards[st.session_state.missing_card_idx], width=300)
-        
-        with col2:
-            if st.button("🔄 Play Again", use_container_width=True):
-                st.session_state.game_cards = random.sample(st.session_state.selected_cards, min(6, len(st.session_state.selected_cards)))
-                st.session_state.missing_card_idx = None
-                st.rerun()
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("⬅ Back to Gallery"):
-        st.session_state.mode = "gallery"
-        st.rerun()
