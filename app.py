@@ -499,9 +499,9 @@ elif st.session_state.mode == "memory_game":
     st.title("🧠 Memory Game")
     st.subheader("Find matching pairs!")
     
-    # Card back colors and numbers
-    colors = ["#9B59B6", "#3498DB", "#2ECC71", "#E67E22", "#E74C3C", "#F39C12"]
-    color_names = ["Purple", "Blue", "Green", "Orange", "Red", "Yellow"]
+    # Card back colors and numbers - 8 colors
+    colors = ["#9B59B6", "#3498DB", "#2ECC71", "#E67E22", "#E74C3C", "#F39C12", "#8B4513", "#FF69B4"]
+    color_names = ["Purple", "Blue", "Green", "Orange", "Red", "Yellow", "Brown", "Pink"]
     
     # Add waiting state for wrong matches
     if "memory_waiting" not in st.session_state:
@@ -523,11 +523,11 @@ elif st.session_state.mode == "memory_game":
                 
                 with cols[i]:
                     if card_idx in st.session_state.memory_matched:
-                        # Matched card - show with green circle overlay (A4 ratio: 1:1.414)
+                        # Matched card - show with green circle overlay (A4 ratio)
                         st.markdown(f"""
                             <div style="position: relative;
                                         width: 100%;
-                                        height: 300px;
+                                        height: 290px;
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -556,7 +556,7 @@ elif st.session_state.mode == "memory_game":
                         # Flipped card - show image (A4 ratio)
                         st.markdown(f"""
                             <div style="width: 100%;
-                                        height: 300px;
+                                        height: 290px;
                                         overflow: hidden;
                                         border-radius: 10px;
                                         display: flex;
@@ -574,7 +574,7 @@ elif st.session_state.mode == "memory_game":
                         
                         st.markdown(f"""
                             <div style="background: {colors[color_idx]}; 
-                                        height: 300px;
+                                        height: 290px;
                                         border-radius: 10px; 
                                         display: flex; 
                                         flex-direction: column;
@@ -601,12 +601,18 @@ elif st.session_state.mode == "memory_game":
                                     if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
                                         st.session_state.memory_matched.extend([idx1, idx2])
                                         st.session_state.memory_flipped = []
-                                        play_sound("correct")
+                                        # Play correct sound immediately
+                                        st.session_state.play_match_sound = True
                                     else:
                                         # Wrong match - set waiting state to show both cards
                                         st.session_state.memory_waiting = True
                                 
                                 st.rerun()
+    
+    # Play match sound if needed
+    if st.session_state.get("play_match_sound", False):
+        play_sound("correct")
+        st.session_state.play_match_sound = False
     
     # Handle wrong match waiting period
     if st.session_state.memory_waiting:
