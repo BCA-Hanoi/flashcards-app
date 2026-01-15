@@ -92,6 +92,50 @@ def play_sound(sound_type):
         """, unsafe_allow_html=True)
 
 
+def display_spot_letter(i, letter, spot_answered):
+    """Helper function to display a Spot It letter card"""
+    if i in spot_answered:
+        # Show with green checkmark
+        st.markdown(f"""
+            <div style="position: relative; text-align: center; height: 200px; 
+                        background: white; border-radius: 10px; 
+                        display: flex; align-items: center; justify-content: center;">
+                <span style="color: #cccccc; font-size: 100px; font-weight: bold;">{letter}</span>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                            width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
+                            background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
+                    <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        # Display letter card
+        st.markdown(f"""
+            <div style="text-align: center; height: 200px; 
+                        background: white; border-radius: 10px; 
+                        display: flex; align-items: center; justify-content: center;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                <span style="color: #333; font-size: 100px; font-weight: bold; font-family: Arial, sans-serif;">
+                    {letter}
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # O and X buttons
+        col_o, col_x = st.columns(2)
+        
+        with col_o:
+            if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
+                st.session_state.spot_answered.append(i)
+                play_sound("big_win")
+                st.rerun()
+        
+        with col_x:
+            if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
+                play_sound("wrong")
+                st.rerun()
+
+
 # ==============================
 # Streamlit UI 설정
 # ==============================
@@ -1042,50 +1086,6 @@ elif st.session_state.mode == "spot_it":
         if st.button("⬅ Back to Gallery", use_container_width=True):
             st.session_state.mode = "gallery"
             st.rerun()
-
-
-def display_spot_letter(i, letter, spot_answered):
-    """Helper function to display a Spot It letter card"""
-    if i in spot_answered:
-        # Show with green checkmark
-        st.markdown(f"""
-            <div style="position: relative; text-align: center; height: 200px; 
-                        background: white; border-radius: 10px; 
-                        display: flex; align-items: center; justify-content: center;">
-                <span style="color: #cccccc; font-size: 100px; font-weight: bold;">{letter}</span>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
-                            background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
-                    <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    else:
-        # Display letter card
-        st.markdown(f"""
-            <div style="text-align: center; height: 200px; 
-                        background: white; border-radius: 10px; 
-                        display: flex; align-items: center; justify-content: center;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                <span style="color: #333; font-size: 100px; font-weight: bold; font-family: Arial, sans-serif;">
-                    {letter}
-                </span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # O and X buttons
-        col_o, col_x = st.columns(2)
-        
-        with col_o:
-            if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
-                st.session_state.spot_answered.append(i)
-                play_sound("big_win")
-                st.rerun()
-        
-        with col_x:
-            if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
-                play_sound("wrong")
-                st.rerun()
 
 
 # ==============================
