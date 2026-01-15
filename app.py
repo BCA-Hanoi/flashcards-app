@@ -47,48 +47,30 @@ def clean_filename(filename):
 
 
 def play_sound(sound_type):
-    """소리 재생 함수"""
-    if sound_type == "correct":
-        # 딩동댕 소리 - 기본 성공음
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
+    """소리 재생 함수 - JavaScript로 직접 재생"""
+    sound_urls = {
+        "correct": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
+        "big_win": "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
+        "wrong": "https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3",
+        "celebration": "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
+        "spin": "https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3",
+        "stop": "https://assets.mixkit.co/active_storage/sfx/1434/1434-preview.mp3"
+    }
+    
+    if sound_type in sound_urls:
+        # JavaScript로 즉시 재생
+        st.markdown(f"""
+            <audio id="audio_{sound_type}" autoplay style="display:none;">
+                <source src="{sound_urls[sound_type]}" type="audio/mpeg">
             </audio>
-        """, unsafe_allow_html=True)
-    elif sound_type == "big_win":
-        # 더 신나는 성공음 - 슬랩더 보드, 메모리 게임용
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" type="audio/mpeg">
-            </audio>
-        """, unsafe_allow_html=True)
-    elif sound_type == "wrong":
-        # 삑 소리 - 오답음
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3" type="audio/mpeg">
-            </audio>
-        """, unsafe_allow_html=True)
-    elif sound_type == "celebration":
-        # 와아~ 축하 소리 - 게임 완료
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" type="audio/mpeg">
-            </audio>
-        """, unsafe_allow_html=True)
-    elif sound_type == "spin":
-        # 스핀 중 소리
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3" type="audio/mpeg">
-            </audio>
-        """, unsafe_allow_html=True)
-    elif sound_type == "stop":
-        # 스핀 멈출 때 소리
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/1434/1434-preview.mp3" type="audio/mpeg">
-            </audio>
+            <script>
+                var audio = document.getElementById('audio_{sound_type}');
+                if (audio) {{
+                    audio.play().catch(function(error) {{
+                        console.log('Audio play failed:', error);
+                    }});
+                }}
+            </script>
         """, unsafe_allow_html=True)
 
 
@@ -126,13 +108,17 @@ def display_spot_letter(i, letter, spot_answered):
         
         with col_o:
             if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
-                st.session_state.spot_answered.append(i)
                 play_sound("big_win")
+                import time
+                time.sleep(0.3)  # Give sound time to start
+                st.session_state.spot_answered.append(i)
                 st.rerun()
         
         with col_x:
             if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
                 play_sound("wrong")
+                import time
+                time.sleep(0.3)  # Give sound time to start
                 st.rerun()
 
 
@@ -217,6 +203,8 @@ if st.session_state.mode == "home":
     with col1:
         check_button = st.button("🔍 Check Existing Words", use_container_width=True)
     
+    missing_words = []
+    
     if check_button and words:
         all_files = get_files_from_folder(FOLDER_ID)
         
@@ -241,6 +229,8 @@ if st.session_state.mode == "home":
             else:
                 not_found.append(word)
         
+        missing_words = not_found
+        
         # 결과 표시
         st.markdown("---")
         if found_words:
@@ -254,11 +244,51 @@ if st.session_state.mode == "home":
             # Copy button for missing words
             missing_text = ", ".join(not_found)
             st.code(missing_text, language=None)
-            if st.button("📋 Copy Missing Words to Clipboard"):
-                st.write("Copy this text: " + missing_text)
     
     elif not words and check_button:
         st.warning("⚠️ Please enter some words first.")
+    
+    # 🔐 Admin Section
+    st.markdown("---")
+    with st.expander("🔐 Teacher Admin"):
+        admin_password = st.text_input(
+            "Admin Password:",
+            type="password",
+            key="admin_password"
+        )
+        
+        if admin_password == "BCA@Hadong":
+            st.success("✅ Access Granted!")
+            
+            if missing_words:
+                st.markdown("### 📤 Upload Missing Words")
+                st.info(f"**Missing Words:** {', '.join(missing_words)}")
+                st.markdown("""
+                    **Instructions:**
+                    1. Click the button below to open Google Drive
+                    2. Upload images for the missing words
+                    3. Name files exactly as: `word.png` or `word.jpg`
+                    4. Come back and refresh to check again
+                """)
+                
+                drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
+                st.markdown(f"""
+                    <a href="{drive_link}" target="_blank">
+                        <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
+                                       text-align: center; font-size: 16px; border: none; 
+                                       border-radius: 8px; cursor: pointer; width: 100%;">
+                            📤 Open Google Drive Folder
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
+            else:
+                if check_button:
+                    st.info("✅ No missing words! All flashcards are available.")
+                else:
+                    st.info("👆 Click 'Check Existing Words' first to see missing words.")
+        
+        elif admin_password:
+            st.error("❌ Incorrect password!")
 
     # Process words when entered (on Enter key or after input)
     if words and not check_button:
@@ -471,13 +501,17 @@ elif st.session_state.mode == "slap_board":
                     
                     with col_o:
                         if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True):
-                            st.session_state.slap_answered.append(card_idx)
                             play_sound("big_win")
+                            import time
+                            time.sleep(0.3)  # Give sound time to start
+                            st.session_state.slap_answered.append(card_idx)
                             st.rerun()
                     
                     with col_x:
                         if st.button("❌", key=f"wrong_{card_idx}", use_container_width=True):
                             play_sound("wrong")
+                            import time
+                            time.sleep(0.3)  # Give sound time to start
                             st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -889,8 +923,10 @@ elif st.session_state.mode == "letter_spinner":
     
     with col1:
         if st.button("🎲 Start Spin", use_container_width=True, type="primary", disabled=st.session_state.spinning):
-            st.session_state.spinning = True
             play_sound("spin")
+            import time
+            time.sleep(0.2)  # Give sound time to start
+            st.session_state.spinning = True
             # Spin 10 times quickly
             for _ in range(10):
                 st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
@@ -898,8 +934,10 @@ elif st.session_state.mode == "letter_spinner":
     
     with col2:
         if st.button("⏸ Stop", use_container_width=True, disabled=not st.session_state.spinning):
-            st.session_state.spinning = False
             play_sound("stop")
+            import time
+            time.sleep(0.2)  # Give sound time to start
+            st.session_state.spinning = False
             st.rerun()
     
     with col3:
