@@ -321,6 +321,21 @@ elif st.session_state.mode == "gallery":
                 if st.session_state.selected_cards:
                     st.session_state.mode = "slap_setup"
                     st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📚 Phonics Games (Level 1)")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🎰 Letter Spinner", use_container_width=True):
+                st.session_state.mode = "letter_spinner_setup"
+                st.rerun()
+        
+        with col2:
+            if st.button("🎯 Spot It!", use_container_width=True):
+                st.session_state.mode = "spot_it_setup"
+                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🏠 Home", use_container_width=True):
@@ -705,6 +720,309 @@ elif st.session_state.mode == "present":
             if st.button("Next ▶", use_container_width=True):
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
+
+
+# ==============================
+# Letter Spinner Setup
+# ==============================
+elif st.session_state.mode == "letter_spinner_setup":
+    st.title("🎰 Letter Spinner Setup")
+    st.subheader("Choose your letter range:")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        letter_range = st.selectbox(
+            "Letter Range:",
+            ["A-Z (All)", "A-M (First Half)", "N-Z (Second Half)", "Vowels Only (A,E,I,O,U)", "Custom"],
+            key="letter_range"
+        )
+    
+    with col2:
+        case_type = st.radio(
+            "Case:",
+            ["Uppercase", "Lowercase", "Mixed"],
+            horizontal=True,
+            key="case_type"
+        )
+    
+    # Custom letters input
+    if letter_range == "Custom":
+        custom_letters = st.text_input(
+            "Enter letters (separated by comma):",
+            placeholder="A, B, C, D, E",
+            key="custom_letters"
+        )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("▶ Start Game", use_container_width=True, type="primary"):
+            # Generate letter list based on selection
+            if letter_range == "A-Z (All)":
+                letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+            elif letter_range == "A-M (First Half)":
+                letters = list("ABCDEFGHIJKLM")
+            elif letter_range == "N-Z (Second Half)":
+                letters = list("NOPQRSTUVWXYZ")
+            elif letter_range == "Vowels Only (A,E,I,O,U)":
+                letters = list("AEIOU")
+            else:  # Custom
+                if "custom_letters" in st.session_state and st.session_state.custom_letters:
+                    letters = [l.strip().upper() for l in st.session_state.custom_letters.split(",")]
+                else:
+                    st.warning("Please enter custom letters!")
+                    st.stop()
+            
+            # Apply case
+            if case_type == "Lowercase":
+                letters = [l.lower() for l in letters]
+            elif case_type == "Mixed":
+                letters = letters + [l.lower() for l in letters]
+            
+            st.session_state.spinner_letters = letters
+            st.session_state.mode = "letter_spinner"
+            st.session_state.spinning = False
+            st.session_state.current_letter = random.choice(letters)
+            st.rerun()
+    
+    with col2:
+        if st.button("⬅ Back to Gallery", use_container_width=True):
+            st.session_state.mode = "gallery"
+            st.rerun()
+
+
+# ==============================
+# Letter Spinner Game
+# ==============================
+elif st.session_state.mode == "letter_spinner":
+    st.title("🎰 Letter Spinner")
+    
+    # Initialize spinning state
+    if "spinning" not in st.session_state:
+        st.session_state.spinning = False
+    if "current_letter" not in st.session_state:
+        st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
+    
+    # Display current letter in big font
+    st.markdown(f"""
+        <div style="display: flex; justify-content: center; align-items: center; height: 400px; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <span style="color: white; font-size: 200px; font-weight: bold; font-family: Arial, sans-serif;">
+                {st.session_state.current_letter}
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Control buttons
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("🎲 Start Spin", use_container_width=True, type="primary", disabled=st.session_state.spinning):
+            st.session_state.spinning = True
+            # Spin 10 times quickly
+            for _ in range(10):
+                st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
+            st.rerun()
+    
+    with col2:
+        if st.button("⏸ Stop", use_container_width=True, disabled=not st.session_state.spinning):
+            st.session_state.spinning = False
+            play_sound("correct")
+            st.rerun()
+    
+    with col3:
+        if st.button("➡ Next", use_container_width=True):
+            st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
+            st.session_state.spinning = False
+            st.rerun()
+    
+    with col4:
+        if st.button("⬅ Back", use_container_width=True):
+            st.session_state.mode = "letter_spinner_setup"
+            st.rerun()
+    
+    # Auto-spin effect
+    if st.session_state.spinning:
+        import time
+        time.sleep(0.1)
+        st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
+        st.rerun()
+
+
+# ==============================
+# Spot It Setup
+# ==============================
+elif st.session_state.mode == "spot_it_setup":
+    st.title("🎯 Spot It! Setup")
+    st.subheader("Choose your settings:")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        letter_range = st.selectbox(
+            "Letter Range:",
+            ["A-Z (All)", "A-M (First Half)", "N-Z (Second Half)", "Vowels Only", "Custom"],
+            key="spot_letter_range"
+        )
+    
+    with col2:
+        num_cards = st.selectbox(
+            "Number of Cards:",
+            [4, 8, 12],
+            key="spot_num_cards"
+        )
+    
+    case_type = st.radio(
+        "Case:",
+        ["Uppercase", "Lowercase", "Mixed"],
+        horizontal=True,
+        key="spot_case_type"
+    )
+    
+    # Custom letters input
+    if letter_range == "Custom":
+        custom_letters = st.text_input(
+            "Enter letters (separated by comma):",
+            placeholder="A, B, C, D, E",
+            key="spot_custom_letters"
+        )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("▶ Start Game", use_container_width=True, type="primary"):
+            # Generate letter list
+            if letter_range == "A-Z (All)":
+                letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+            elif letter_range == "A-M (First Half)":
+                letters = list("ABCDEFGHIJKLM")
+            elif letter_range == "N-Z (Second Half)":
+                letters = list("NOPQRSTUVWXYZ")
+            elif letter_range == "Vowels Only":
+                letters = list("AEIOU")
+            else:  # Custom
+                if st.session_state.get("spot_custom_letters"):
+                    letters = [l.strip().upper() for l in st.session_state.spot_custom_letters.split(",")]
+                else:
+                    st.warning("Please enter custom letters!")
+                    st.stop()
+            
+            # Apply case
+            if case_type == "Lowercase":
+                letters = [l.lower() for l in letters]
+            elif case_type == "Mixed":
+                letters = letters + [l.lower() for l in letters]
+            
+            # Generate cards
+            if len(letters) < num_cards:
+                st.warning(f"Not enough letters! Need at least {num_cards} letters.")
+                st.stop()
+            
+            st.session_state.spot_letters = random.sample(letters, num_cards)
+            st.session_state.spot_answered = []
+            st.session_state.mode = "spot_it"
+            st.rerun()
+    
+    with col2:
+        if st.button("⬅ Back to Gallery", use_container_width=True):
+            st.session_state.mode = "gallery"
+            st.rerun()
+
+
+# ==============================
+# Spot It Game
+# ==============================
+elif st.session_state.mode == "spot_it":
+    st.title("🎯 Spot It!")
+    st.subheader("Find the letter the teacher calls!")
+    
+    if "spot_answered" not in st.session_state:
+        st.session_state.spot_answered = []
+    
+    # Display letters in grid (8 columns like gallery)
+    num_cards = len(st.session_state.spot_letters)
+    num_cols = 8
+    empty_cols_before = (num_cols - num_cards) // 2
+    
+    cols = st.columns(num_cols)
+    
+    for i, letter in enumerate(st.session_state.spot_letters):
+        col_position = empty_cols_before + i
+        
+        with cols[col_position]:
+            if i in st.session_state.spot_answered:
+                # Show with green checkmark
+                st.markdown(f"""
+                    <div style="position: relative; text-align: center; height: 200px; 
+                                background: white; border-radius: 10px; 
+                                display: flex; align-items: center; justify-content: center;">
+                        <span style="color: #cccccc; font-size: 100px; font-weight: bold;">{letter}</span>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                    width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
+                                    background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
+                            <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                # Display letter card
+                st.markdown(f"""
+                    <div style="text-align: center; height: 200px; 
+                                background: white; border-radius: 10px; 
+                                display: flex; align-items: center; justify-content: center;
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                        <span style="color: #333; font-size: 100px; font-weight: bold; font-family: Arial, sans-serif;">
+                            {letter}
+                        </span>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # O and X buttons
+                col_o, col_x = st.columns(2)
+                
+                with col_o:
+                    if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
+                        st.session_state.spot_answered.append(i)
+                        play_sound("correct")
+                        st.rerun()
+                
+                with col_x:
+                    if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
+                        play_sound("wrong")
+                        st.rerun()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Control buttons
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("➡ Next Round", use_container_width=True):
+            # Generate new random letters
+            num_cards = len(st.session_state.spot_letters)
+            all_letters = list(set([l.upper() if l.isupper() else l for l in st.session_state.spot_letters]))
+            
+            # Recreate with same settings
+            st.session_state.spot_letters = random.sample(
+                st.session_state.spot_letters, 
+                min(num_cards, len(st.session_state.spot_letters))
+            )
+            random.shuffle(st.session_state.spot_letters)
+            st.session_state.spot_answered = []
+            st.rerun()
+    
+    with col2:
+        if st.button("⬅ Back to Gallery", use_container_width=True):
+            st.session_state.mode = "gallery"
+            st.rerun()
 
 
 # ==============================
