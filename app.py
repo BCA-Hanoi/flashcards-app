@@ -354,7 +354,6 @@ elif st.session_state.mode == "slap_board":
         
         # Center align cards by adding empty columns
         empty_cols_before = (num_cols - num_cards) // 2
-        empty_cols_after = num_cols - num_cards - empty_cols_before
         
         # Create column layout with centering
         cols = st.columns(num_cols)
@@ -366,59 +365,34 @@ elif st.session_state.mode == "slap_board":
             
             with cols[col_position]:
                 if card_idx in st.session_state.slap_answered:
-                    # Show trophy for correct answer
+                    # Show card with green checkmark overlay for correct answer
                     st.markdown(f"""
                         <div style="position: relative; text-align: center;">
-                            <img src="{url}" style="width: 100%; opacity: 0.3; border-radius: 10px;">
+                            <img src="{url}" style="width: 100%; opacity: 0.5; border-radius: 10px;">
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
                                         width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
-                                        background: rgba(0, 255, 0, 0.2); display: flex; align-items: center; justify-content: center;">
+                                        background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
                                 <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                elif st.session_state.selected_slap_card == card_idx:
-                    # Show selected card with blue circle overlay
-                    st.markdown(f"""
-                        <div style="position: relative;">
-                            <img src="{url}" style="width: 100%; border-radius: 10px;">
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                                        width: 80%; height: 80%; border: 8px solid #FFD700; border-radius: 50%; 
-                                        background: rgba(255, 215, 0, 0.2); display: flex; align-items: center; justify-content: center;">
-                                <span style="color: #FFD700; font-size: 60px; font-weight: bold;">?</span>
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
                 else:
                     # Display normal card
                     st.image(url, use_container_width=True)
-                
-                # Selection button below card
-                if card_idx not in st.session_state.slap_answered:
-                    if st.button(f"Card {card_idx + 1}", key=f"slap_card_{card_idx}", use_container_width=True):
-                        st.session_state.selected_slap_card = card_idx
-                        st.rerun()
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Show Correct/Wrong buttons if a card is selected
-        if st.session_state.selected_slap_card is not None and st.session_state.selected_slap_card not in st.session_state.slap_answered:
-            st.info(f"✨ Card {st.session_state.selected_slap_card + 1} selected! Is it correct?")
-            
-            col1, col2, col3 = st.columns([1, 1, 2])
-            
-            with col1:
-                if st.button("✅ Correct!", use_container_width=True, type="primary"):
-                    st.session_state.slap_answered.append(st.session_state.selected_slap_card)
-                    st.session_state.selected_slap_card = None
-                    play_sound("correct")
-                    st.rerun()
-            
-            with col2:
-                if st.button("❌ Wrong!", use_container_width=True):
-                    st.session_state.selected_slap_card = None
-                    play_sound("wrong")
-                    st.rerun()
+                    
+                    # O and X buttons below each card
+                    col_o, col_x = st.columns(2)
+                    
+                    with col_o:
+                        if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True, type="primary"):
+                            st.session_state.slap_answered.append(card_idx)
+                            play_sound("correct")
+                            st.rerun()
+                    
+                    with col_x:
+                        if st.button("❌", key=f"wrong_{card_idx}", use_container_width=True):
+                            play_sound("wrong")
+                            st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
         
