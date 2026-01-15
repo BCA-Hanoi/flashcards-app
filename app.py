@@ -319,31 +319,16 @@ elif st.session_state.mode == "gallery":
         st.markdown("### 🎯 Slap the Board Game")
         st.write("Select number of cards to show:")
         
-        slap_cols = st.columns(3)
+        slap_cols = st.columns(8)
         
-        with slap_cols[0]:
-            if st.button("4 Cards (2x2)", key="slap_4", use_container_width=True):
-                if len(st.session_state.selected_cards) >= 4:
-                    st.session_state.mode = "slap_board"
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 4)
-                    st.session_state.slap_answered = []
-                    st.rerun()
-        
-        with slap_cols[1]:
-            if st.button("6 Cards (2x3)", key="slap_6", use_container_width=True):
-                if len(st.session_state.selected_cards) >= 6:
-                    st.session_state.mode = "slap_board"
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 6)
-                    st.session_state.slap_answered = []
-                    st.rerun()
-        
-        with slap_cols[2]:
-            if st.button("8 Cards (4x2)", key="slap_8", use_container_width=True):
-                if len(st.session_state.selected_cards) >= 8:
-                    st.session_state.mode = "slap_board"
-                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, 8)
-                    st.session_state.slap_answered = []
-                    st.rerun()
+        for i in range(8):
+            with slap_cols[i]:
+                if st.button(f"{i+1}", key=f"slap_{i+1}", use_container_width=True):
+                    if len(st.session_state.selected_cards) >= i+1:
+                        st.session_state.mode = "slap_board"
+                        st.session_state.game_cards = random.sample(st.session_state.selected_cards, i+1)
+                        st.session_state.slap_answered = []
+                        st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🏠 Home", use_container_width=True):
@@ -364,52 +349,46 @@ elif st.session_state.mode == "slap_board":
     if st.session_state.game_cards:
         num_cards = len(st.session_state.game_cards)
         
-        # Determine grid layout
-        if num_cards == 4:
-            cols_per_row = 2  # 2x2
-        elif num_cards == 6:
-            cols_per_row = 3  # 2x3
-        elif num_cards == 8:
-            cols_per_row = 4  # 4x2
-        else:
-            cols_per_row = min(5, num_cards)
+        # Use 8 columns like gallery for consistent display
+        num_cols = 8
         
-        # Display cards in grid
-        for row_start in range(0, num_cards, cols_per_row):
-            row_cards = st.session_state.game_cards[row_start:row_start + cols_per_row]
-            cols = st.columns(len(row_cards))
+        # Center align cards by adding empty columns
+        empty_cols_before = (num_cols - num_cards) // 2
+        empty_cols_after = num_cols - num_cards - empty_cols_before
+        
+        # Create column layout with centering
+        cols = st.columns(num_cols)
+        
+        # Display cards centered
+        for i, url in enumerate(st.session_state.game_cards):
+            card_idx = i
+            col_position = empty_cols_before + i
             
-            for i, url in enumerate(row_cards):
-                card_idx = row_start + i
-                with cols[i]:
-                    if card_idx in st.session_state.slap_answered:
-                        # Show trophy instead of card
-                        st.markdown("""
-                            <div style="text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                <div style="font-size: 80px;">🏆</div>
-                                <div style="color: white; font-size: 24px; font-weight: bold; margin-top: 10px;">Correct!</div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        # Make card clickable (A4 ratio)
-                        if st.button(f"Select Card {card_idx + 1}", key=f"slap_card_{card_idx}", use_container_width=True):
-                            st.session_state.selected_slap_card = card_idx
-                            st.rerun()
-                        
-                        # Display card image on top of button with A4 ratio
-                        st.markdown(f"""
-                            <div style="margin-top: -40px; pointer-events: none;">
-                                <img src="{url}" style="width: 100%; height: 350px; object-fit: contain; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); background: white;">
-                            </div>
-                        """, unsafe_allow_html=True)
+            with cols[col_position]:
+                if card_idx in st.session_state.slap_answered:
+                    # Show trophy instead of card
+                    st.markdown("""
+                        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+                            <div style="font-size: 50px;">🏆</div>
+                            <div style="color: white; font-size: 14px; font-weight: bold; margin-top: 5px;">Correct!</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    # Display card image (same as gallery)
+                    st.image(url, use_container_width=True)
+                    
+                    # Selection button below card
+                    if st.button(f"Card {card_idx + 1}", key=f"slap_card_{card_idx}", use_container_width=True):
+                        st.session_state.selected_slap_card = card_idx
+                        st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         # Show Correct/Wrong buttons if a card is selected
         if st.session_state.selected_slap_card is not None:
-            st.info(f"Card {st.session_state.selected_slap_card + 1} selected! Is it correct?")
+            st.info(f"✨ Card {st.session_state.selected_slap_card + 1} selected! Is it correct?")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns([1, 1, 2])
             
             with col1:
                 if st.button("✅ Correct!", use_container_width=True, type="primary"):
