@@ -12,9 +12,9 @@ if "pending_sound" in st.session_state and st.session_state.pending_sound:
     sound_type = st.session_state.pending_sound
     st.session_state.pending_sound = None
     
-    # 소리 재생
+    # Google Drive sounds
     sound_urls = {
-        "correct": "https://www.soundjay.com/buttons/sounds/button-09.mp3",
+        "correct": "https://drive.google.com/uc?export=download&id=1VOt1cg8jjaMC13qSwNROU-9Q5HpLhxyr",
         "wrong": "https://www.soundjay.com/buttons/sounds/button-10.mp3"
     }
     
@@ -69,50 +69,6 @@ def clean_filename(filename):
 def play_sound(sound_type):
     """소리 재생 함수 - Session State에 플래그 저장"""
     st.session_state.pending_sound = sound_type
-
-
-def display_spot_letter(i, letter, spot_answered):
-    """Helper function to display a Spot It letter card"""
-    if i in spot_answered:
-        # Show with green checkmark
-        st.markdown(f"""
-            <div style="position: relative; text-align: center; height: 200px; 
-                        background: white; border-radius: 10px; 
-                        display: flex; align-items: center; justify-content: center;">
-                <span style="color: #cccccc; font-size: 100px; font-weight: bold;">{letter}</span>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
-                            background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
-                    <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    else:
-        # Display letter card
-        st.markdown(f"""
-            <div style="text-align: center; height: 200px; 
-                        background: white; border-radius: 10px; 
-                        display: flex; align-items: center; justify-content: center;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                <span style="color: #333; font-size: 100px; font-weight: bold; font-family: Arial, sans-serif;">
-                    {letter}
-                </span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # O and X buttons
-        col_o, col_x = st.columns(2)
-        
-        with col_o:
-            if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
-                st.session_state.spot_answered.append(i)
-                play_sound("correct")
-                st.rerun()
-        
-        with col_x:
-            if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
-                play_sound("wrong")
-                st.rerun()
 
 
 # ==============================
@@ -179,147 +135,125 @@ if "memory_matched" not in st.session_state:
 # 1단계: 단어 입력 화면
 # ==============================
 if st.session_state.mode == "home":
-    st.title("📚 BCA Flashcards & Games")
+    st.title("📚 BCA Flashcards")
+    st.subheader("Type words (comma separated), then press Enter.")
+
+    words = st.text_input(
+        "Flashcards",
+        placeholder="e.g., bucket, apple, maze, rabbit",
+        label_visibility="collapsed",
+        key="word_input",
+        on_change=None  # Will process on Enter
+    )
+
+    # Start and Check buttons
+    col1, col2, col3 = st.columns([2, 1, 2])
     
-    # Create tabs
-    tab1, tab2 = st.tabs(["🎴 Flashcards", "📚 Phonics Games"])
+    with col1:
+        start_button = st.button("▶ Start", use_container_width=True, type="primary")
     
-    # ===== TAB 1: FLASHCARDS =====
-    with tab1:
-        st.subheader("Type words (comma separated), then press Enter.")
+    with col3:
+        check_button = st.button("🔍 Check", use_container_width=True)
+    
+    # Handle Start button or Enter key
+    if (start_button or (words and not check_button)) and words:
+        all_files = get_files_from_folder(FOLDER_ID)
 
-        words = st.text_input(
-            "Flashcards",
-            placeholder="e.g., bucket, apple, maze, rabbit",
-            label_visibility="collapsed",
-            key="word_input",
-            on_change=None  # Will process on Enter
-        )
+        # 파일명 매핑 (중복 허용)
+        file_map = {}
+        for f in all_files:
+            clean_name = clean_filename(f["name"])
+            if clean_name not in file_map:
+                file_map[clean_name] = []
+            file_map[clean_name].append(f["id"])
 
-        # Start and Check buttons
-        col1, col2, col3 = st.columns([2, 1, 2])
+        selected = []
+        for w in [w.strip().lower() for w in words.split(",")]:
+            if w in file_map:
+                # 같은 단어의 모든 이미지 추가
+                for file_id in file_map[w]:
+                    selected.append(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
+
+        if selected:
+            st.session_state.cards = selected
+            st.session_state.mode = "gallery"
+            st.rerun()
+        else:
+            st.warning("⚠️ No matching flashcards found. Try again.")
+    
+    # Handle Check button
+    if check_button and words:
+        all_files = get_files_from_folder(FOLDER_ID)
         
-        with col1:
-            start_button = st.button("▶ Start", use_container_width=True, type="primary")
+        # 파일명 매핑 (중복 허용)
+        file_map = {}
+        for f in all_files:
+            clean_name = clean_filename(f["name"])
+            if clean_name not in file_map:
+                file_map[clean_name] = []
+            file_map[clean_name].append({
+                "id": f["id"],
+                "original_name": f["name"]
+            })
         
-        with col3:
-            check_button = st.button("🔍 Check", use_container_width=True)
+        input_words = [w.strip().lower() for w in words.split(",")]
+        found_words = []
+        not_found = []
         
-        # Handle Start button or Enter key
-        if (start_button or (words and not check_button)) and words:
-            all_files = get_files_from_folder(FOLDER_ID)
-
-            # 파일명 매핑 (중복 허용)
-            file_map = {}
-            for f in all_files:
-                clean_name = clean_filename(f["name"])
-                if clean_name not in file_map:
-                    file_map[clean_name] = []
-                file_map[clean_name].append(f["id"])
-
-            selected = []
-            for w in [w.strip().lower() for w in words.split(",")]:
-                if w in file_map:
-                    # 같은 단어의 모든 이미지 추가
-                    for file_id in file_map[w]:
-                        selected.append(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
-
-            if selected:
-                st.session_state.cards = selected
-                st.session_state.mode = "gallery"
-                st.rerun()
+        for word in input_words:
+            if word in file_map:
+                found_words.append(f"{word} ({len(file_map[word])} cards)")
             else:
-                st.warning("⚠️ No matching flashcards found. Try again.")
+                not_found.append(word)
         
-        # Handle Check button
-        if check_button and words:
-            all_files = get_files_from_folder(FOLDER_ID)
-            
-            # 파일명 매핑 (중복 허용)
-            file_map = {}
-            for f in all_files:
-                clean_name = clean_filename(f["name"])
-                if clean_name not in file_map:
-                    file_map[clean_name] = []
-                file_map[clean_name].append({
-                    "id": f["id"],
-                    "original_name": f["name"]
-                })
-            
-            input_words = [w.strip().lower() for w in words.split(",")]
-            found_words = []
-            not_found = []
-            
-            for word in input_words:
-                if word in file_map:
-                    found_words.append(f"{word} ({len(file_map[word])} cards)")
-                else:
-                    not_found.append(word)
-            
-            # 결과 표시
-            st.markdown("---")
-            if found_words:
-                st.success(f"✅ **Found ({len(found_words)} words):**")
-                st.write(", ".join(found_words))
-            
-            if not_found:
-                st.error(f"❌ **Not Found ({len(not_found)} words):**")
-                st.write(", ".join(not_found))
-                
-                # Copy button for missing words
-                missing_text = ", ".join(not_found)
-                st.code(missing_text, language=None)
-            
-            st.info("✨ Click **▶ Start** to load flashcards!")
-        
-        elif check_button and not words:
-            st.warning("⚠️ Please enter some words first.")
-        
-        # 🔐 Admin Section - Upload Only
+        # 결과 표시
         st.markdown("---")
-        with st.expander("🔐 Admin (Upload)"):
-            st.markdown("**Password:**")
-            admin_password = st.text_input(
-                "Enter password",
-                type="password",
-                key="admin_password",
-                label_visibility="collapsed"
-            )
+        if found_words:
+            st.success(f"✅ **Found ({len(found_words)} words):**")
+            st.write(", ".join(found_words))
+        
+        if not_found:
+            st.error(f"❌ **Not Found ({len(not_found)} words):**")
+            st.write(", ".join(not_found))
             
-            if admin_password == "BCA@HaDong":
-                st.success("✅ Access Granted!")
-                
-                st.markdown("### 📤 Go to Upload Flashcard")
-                
-                drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
-                st.markdown(f"""
-                    <a href="{drive_link}" target="_blank">
-                        <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
-                                       text-align: center; font-size: 16px; border: none; 
-                                       border-radius: 8px; cursor: pointer; width: 100%;">
-                            📤 Go to Upload Flashcard
-                        </button>
-                    </a>
-                """, unsafe_allow_html=True)
-            
-            elif admin_password:
-                st.error("❌ Incorrect password!")
+            # Copy button for missing words
+            missing_text = ", ".join(not_found)
+            st.code(missing_text, language=None)
+        
+        st.info("✨ Click **▶ Start** to load flashcards!")
     
-    # ===== TAB 2: PHONICS GAMES =====
-    with tab2:
-        st.subheader("Level 1: Alphabet Recognition")
+    elif check_button and not words:
+        st.warning("⚠️ Please enter some words first.")
+    
+    # 🔐 Admin Section - Upload Only
+    st.markdown("---")
+    with st.expander("🔐 Admin (Upload)"):
+        st.markdown("**Password:**")
+        admin_password = st.text_input(
+            "Enter password",
+            type="password",
+            key="admin_password",
+            label_visibility="collapsed"
+        )
         
-        col1, col2, col3 = st.columns(3)
+        if admin_password == "BCA@HaDong":
+            st.success("✅ Access Granted!")
+            
+            st.markdown("### 📤 Go to Upload Flashcard")
+            
+            drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
+            st.markdown(f"""
+                <a href="{drive_link}" target="_blank">
+                    <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
+                                   text-align: center; font-size: 16px; border: none; 
+                                   border-radius: 8px; cursor: pointer; width: 100%;">
+                        📤 Go to Upload Flashcard
+                    </button>
+                </a>
+            """, unsafe_allow_html=True)
         
-        with col1:
-            if st.button("🎰 Letter Spinner", use_container_width=True, key="home_spinner"):
-                st.session_state.mode = "letter_spinner_setup"
-                st.rerun()
-        
-        with col2:
-            if st.button("🎯 Spot It!", use_container_width=True, key="home_spot"):
-                st.session_state.mode = "spot_it_setup"
-                st.rerun()
+        elif admin_password:
+            st.error("❌ Incorrect password!")
 
 
 # ==============================
@@ -435,16 +369,25 @@ elif st.session_state.mode == "slap_board":
     st.title("🎯 Slap the Board!")
     st.subheader(f"Find the correct card! ({len(st.session_state.game_cards)} cards)")
     
-    # Custom CSS to style buttons
+    # Custom CSS to style buttons - transparent backgrounds
     st.markdown("""
         <style>
-            /* Remove red background from all buttons in slap board */
-            div[data-testid="stHorizontalBlock"] button {
-                background-color: white !important;
-                color: black !important;
+            /* Make all buttons in Slap the Board transparent */
+            [data-testid="column"] button[kind="secondary"],
+            [data-testid="column"] button[kind="primary"] {
+                background-color: transparent !important;
+                border: 2px solid #e0e0e0 !important;
+                color: #333 !important;
             }
-            div[data-testid="stHorizontalBlock"] button:hover {
-                background-color: #f0f0f0 !important;
+            [data-testid="column"] button[kind="secondary"]:hover,
+            [data-testid="column"] button[kind="primary"]:hover {
+                background-color: rgba(0, 0, 0, 0.05) !important;
+                border-color: #999 !important;
+            }
+            /* Bottom control buttons stay normal */
+            div[data-testid="stHorizontalBlock"]:last-of-type button {
+                background-color: white !important;
+                border: 1px solid #e0e0e0 !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -799,367 +742,3 @@ elif st.session_state.mode == "present":
             if st.button("Next ▶", use_container_width=True):
                 st.session_state.current = (st.session_state.current + 1) % len(st.session_state.cards)
                 st.rerun()
-
-
-# ==============================
-# Letter Spinner Setup
-# ==============================
-elif st.session_state.mode == "letter_spinner_setup":
-    st.title("🎰 Letter Spinner Setup")
-    st.subheader("Choose your letter range:")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        letter_range = st.selectbox(
-            "Letter Range:",
-            ["A-Z (All)", "A-M (First Half)", "N-Z (Second Half)", "Vowels Only (A,E,I,O,U)", "Custom"],
-            key="letter_range"
-        )
-    
-    with col2:
-        case_type = st.radio(
-            "Case:",
-            ["Uppercase", "Lowercase", "Mixed"],
-            horizontal=True,
-            key="case_type"
-        )
-    
-    # Custom letters input
-    if letter_range == "Custom":
-        custom_letters = st.text_input(
-            "Enter letters (separated by comma):",
-            placeholder="A, B, C, D, E",
-            key="custom_letters"
-        )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("▶ Start Game", use_container_width=True, type="primary"):
-            # Generate letter list based on selection
-            if letter_range == "A-Z (All)":
-                letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-            elif letter_range == "A-M (First Half)":
-                letters = list("ABCDEFGHIJKLM")
-            elif letter_range == "N-Z (Second Half)":
-                letters = list("NOPQRSTUVWXYZ")
-            elif letter_range == "Vowels Only (A,E,I,O,U)":
-                letters = list("AEIOU")
-            else:  # Custom
-                if "custom_letters" in st.session_state and st.session_state.custom_letters:
-                    letters = [l.strip().upper() for l in st.session_state.custom_letters.split(",")]
-                else:
-                    st.warning("Please enter custom letters!")
-                    st.stop()
-            
-            # Apply case
-            if case_type == "Lowercase":
-                letters = [l.lower() for l in letters]
-            elif case_type == "Mixed":
-                letters = letters + [l.lower() for l in letters]
-            
-            st.session_state.spinner_letters = letters
-            st.session_state.mode = "letter_spinner"
-            st.session_state.spinning = False
-            st.session_state.current_letter = random.choice(letters)
-            st.rerun()
-    
-    with col2:
-        if st.button("⬅ Back to Gallery", use_container_width=True):
-            st.session_state.mode = "gallery"
-            st.rerun()
-
-
-# ==============================
-# Letter Spinner Game
-# ==============================
-elif st.session_state.mode == "letter_spinner":
-    st.title("🎰 Letter Spinner")
-    
-    # Initialize spinning state
-    if "spinning" not in st.session_state:
-        st.session_state.spinning = False
-    if "current_letter" not in st.session_state:
-        st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
-    
-    # Display current letter in big font
-    st.markdown(f"""
-        <div style="display: flex; justify-content: center; align-items: center; height: 400px; 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-            <span style="color: white; font-size: 200px; font-weight: bold; font-family: Arial, sans-serif;">
-                {st.session_state.current_letter}
-            </span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Control buttons
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        if st.button("🎲 Start Spin", use_container_width=True, type="primary", disabled=st.session_state.spinning):
-            st.session_state.spinning = True
-            # Spin 10 times quickly
-            for _ in range(10):
-                st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
-            st.rerun()
-    
-    with col2:
-        if st.button("⏸ Stop", use_container_width=True, disabled=not st.session_state.spinning):
-            st.session_state.spinning = False
-            play_sound("correct")
-            st.rerun()
-    
-    with col3:
-        if st.button("➡ Next", use_container_width=True):
-            st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
-            st.session_state.spinning = False
-            st.rerun()
-    
-    with col4:
-        if st.button("⬅ Back", use_container_width=True):
-            st.session_state.mode = "letter_spinner_setup"
-            st.rerun()
-    
-    # Auto-spin effect
-    if st.session_state.spinning:
-        import time
-        time.sleep(0.1)
-        st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
-        st.rerun()
-
-
-# ==============================
-# Spot It Setup
-# ==============================
-elif st.session_state.mode == "spot_it_setup":
-    st.title("🎯 Spot It! Setup")
-    st.subheader("Choose your settings:")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        letter_range = st.selectbox(
-            "Letter Range:",
-            ["A-Z (All)", "A-M (First Half)", "N-Z (Second Half)", "Vowels Only", "Custom"],
-            key="spot_letter_range"
-        )
-    
-    with col2:
-        num_cards = st.selectbox(
-            "Number of Cards:",
-            [4, 8, 12],
-            key="spot_num_cards"
-        )
-    
-    case_type = st.radio(
-        "Case:",
-        ["Uppercase", "Lowercase", "Mixed"],
-        horizontal=True,
-        key="spot_case_type"
-    )
-    
-    # Custom letters input
-    if letter_range == "Custom":
-        custom_letters = st.text_input(
-            "Enter letters (separated by comma):",
-            placeholder="A, B, C, D, E",
-            key="spot_custom_letters"
-        )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("▶ Start Game", use_container_width=True, type="primary"):
-            # Generate letter list
-            if letter_range == "A-Z (All)":
-                letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-            elif letter_range == "A-M (First Half)":
-                letters = list("ABCDEFGHIJKLM")
-            elif letter_range == "N-Z (Second Half)":
-                letters = list("NOPQRSTUVWXYZ")
-            elif letter_range == "Vowels Only":
-                letters = list("AEIOU")
-            else:  # Custom
-                if st.session_state.get("spot_custom_letters"):
-                    letters = [l.strip().upper() for l in st.session_state.spot_custom_letters.split(",")]
-                else:
-                    st.warning("Please enter custom letters!")
-                    st.stop()
-            
-            # Apply case
-            if case_type == "Lowercase":
-                letters = [l.lower() for l in letters]
-            elif case_type == "Mixed":
-                letters = letters + [l.lower() for l in letters]
-            
-            # Generate cards
-            if len(letters) < num_cards:
-                st.warning(f"Not enough letters! Need at least {num_cards} letters.")
-                st.stop()
-            
-            st.session_state.spot_letters = random.sample(letters, num_cards)
-            st.session_state.spot_answered = []
-            st.session_state.mode = "spot_it"
-            st.rerun()
-    
-    with col2:
-        if st.button("⬅ Back to Gallery", use_container_width=True):
-            st.session_state.mode = "gallery"
-            st.rerun()
-
-
-# ==============================
-# Spot It Game
-# ==============================
-elif st.session_state.mode == "spot_it":
-    st.title("🎯 Spot It!")
-    
-    # Teacher input for target letter
-    st.markdown("### 👨‍🏫 Teacher: Call out a letter!")
-    target_letter = st.text_input(
-        "Which letter should students find?",
-        placeholder="Type a letter (e.g., A, b, M)",
-        max_chars=1,
-        key="target_letter_input"
-    )
-    
-    if target_letter:
-        st.info(f"🎯 Target Letter: **{target_letter}**")
-    
-    st.markdown("---")
-    
-    if "spot_answered" not in st.session_state:
-        st.session_state.spot_answered = []
-    
-    # Display letters in grid
-    num_cards = len(st.session_state.spot_letters)
-    num_cols = 8
-    
-    # If more than 8 cards, split into 2 rows
-    if num_cards <= 8:
-        # Single row - center aligned
-        empty_cols_before = (num_cols - num_cards) // 2
-        cols = st.columns(num_cols)
-        
-        for i, letter in enumerate(st.session_state.spot_letters):
-            col_position = empty_cols_before + i
-            
-            with cols[col_position]:
-                display_spot_letter(i, letter, st.session_state.spot_answered)
-    else:
-        # Two rows - split evenly
-        first_row_count = (num_cards + 1) // 2
-        second_row_count = num_cards - first_row_count
-        
-        # First row
-        empty_cols_before_1 = (num_cols - first_row_count) // 2
-        cols1 = st.columns(num_cols)
-        
-        for i in range(first_row_count):
-            col_position = empty_cols_before_1 + i
-            letter = st.session_state.spot_letters[i]
-            
-            with cols1[col_position]:
-                display_spot_letter(i, letter, st.session_state.spot_answered)
-        
-        # Second row
-        empty_cols_before_2 = (num_cols - second_row_count) // 2
-        cols2 = st.columns(num_cols)
-        
-        for j in range(second_row_count):
-            i = first_row_count + j
-            col_position = empty_cols_before_2 + j
-            letter = st.session_state.spot_letters[i]
-            
-            with cols2[col_position]:
-                display_spot_letter(i, letter, st.session_state.spot_answered)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Control buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("➡ Next Round", use_container_width=True):
-            # Generate new random letters
-            num_cards = len(st.session_state.spot_letters)
-            random.shuffle(st.session_state.spot_letters)
-            st.session_state.spot_answered = []
-            st.rerun()
-    
-    with col2:
-        if st.button("⬅ Back to Gallery", use_container_width=True):
-            st.session_state.mode = "gallery"
-            st.rerun()
-
-
-# ==============================
-# Hide & Seek Game
-# ==============================
-elif st.session_state.mode == "hide_seek":
-    st.title("🔍 Hide & Seek - Guess the Card!")
-    
-    # Initialize random card order if not exists
-    if "hide_seek_order" not in st.session_state or len(st.session_state.hide_seek_order) == 0:
-        st.session_state.hide_seek_order = list(range(len(st.session_state.selected_cards)))
-        random.shuffle(st.session_state.hide_seek_order)
-        st.session_state.hide_seek_index = 0
-    
-    if st.session_state.selected_cards and st.session_state.hide_seek_index < len(st.session_state.hide_seek_order):
-        current_card_idx = st.session_state.hide_seek_order[st.session_state.hide_seek_index]
-        current_card = st.session_state.selected_cards[current_card_idx]
-        
-        # Zoom styles
-        zoom_styles = {
-            1: "transform: scale(4); object-fit: cover; height: 400px; width: 400px; object-position: 30% 30%;",
-            2: "transform: scale(2.5); object-fit: cover; height: 500px; width: 500px; object-position: 40% 40%;",
-            3: "transform: scale(1.5); object-fit: cover; height: 600px; width: 600px;",
-            4: "object-fit: contain; max-height: 700px; max-width: 100%;"
-        }
-        
-        st.markdown(f"""
-            <div style="display: flex; justify-content: center; align-items: center; overflow: hidden; height: 500px; background: #f0f0f0; border-radius: 10px;">
-                <img src="{current_card}?sz=w800" 
-                     style="{zoom_styles[st.session_state.zoom_level]} border-radius: 10px;">
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            if st.button("💡 Hint (Show More)", use_container_width=True):
-                if st.session_state.zoom_level < 4:
-                    st.session_state.zoom_level += 1
-                    st.rerun()
-        
-        with col2:
-            if st.button("➡ Next Card", use_container_width=True):
-                st.session_state.hide_seek_index += 1
-                st.session_state.zoom_level = 1
-                st.rerun()
-        
-        with col3:
-            if st.button("🔄 Reset Zoom", use_container_width=True):
-                st.session_state.zoom_level = 1
-                st.rerun()
-        
-        with col4:
-            if st.button("⬅ Back", use_container_width=True):
-                st.session_state.mode = "gallery"
-                st.session_state.hide_seek_order = []
-                st.rerun()
-
-
-# ==============================
-# What's Missing Game - REMOVED
-# ==============================
