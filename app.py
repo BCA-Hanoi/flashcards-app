@@ -179,123 +179,147 @@ if "memory_matched" not in st.session_state:
 # 1단계: 단어 입력 화면
 # ==============================
 if st.session_state.mode == "home":
-    st.title("📚 BCA Flashcards")
-    st.subheader("Type words (comma separated), then press Enter.")
+    st.title("📚 BCA Flashcards & Games")
+    
+    # Create tabs
+    tab1, tab2 = st.tabs(["🎴 Flashcards", "📚 Phonics Games"])
+    
+    # ===== TAB 1: FLASHCARDS =====
+    with tab1:
+        st.subheader("Type words (comma separated), then press Enter.")
 
-    words = st.text_input(
-        "Flashcards",
-        placeholder="e.g., bucket, apple, maze, rabbit",
-        label_visibility="collapsed",
-        key="word_input",
-        on_change=None  # Will process on Enter
-    )
-
-    # ✅ Check Existing Words button - Available to everyone
-    col1, col2 = st.columns([1, 3])
-    
-    with col1:
-        check_button = st.button("🔍 Check Existing Words", use_container_width=True)
-    
-    missing_words = []
-    
-    if check_button and words:
-        all_files = get_files_from_folder(FOLDER_ID)
-        
-        # 파일명 매핑 (중복 허용)
-        file_map = {}
-        for f in all_files:
-            clean_name = clean_filename(f["name"])
-            if clean_name not in file_map:
-                file_map[clean_name] = []
-            file_map[clean_name].append({
-                "id": f["id"],
-                "original_name": f["name"]
-            })
-        
-        input_words = [w.strip().lower() for w in words.split(",")]
-        found_words = []
-        not_found = []
-        
-        for word in input_words:
-            if word in file_map:
-                found_words.append(f"{word} ({len(file_map[word])} cards)")
-            else:
-                not_found.append(word)
-        
-        missing_words = not_found
-        
-        # 결과 표시
-        st.markdown("---")
-        if found_words:
-            st.success(f"✅ **Found ({len(found_words)} words):**")
-            st.write(", ".join(found_words))
-        
-        if not_found:
-            st.error(f"❌ **Not Found ({len(not_found)} words):**")
-            st.write(", ".join(not_found))
-            
-            # Copy button for missing words
-            missing_text = ", ".join(not_found)
-            st.code(missing_text, language=None)
-    
-    elif not words and check_button:
-        st.warning("⚠️ Please enter some words first.")
-    
-    # 🔐 Admin Section - Always visible
-    st.markdown("---")
-    with st.expander("🔐 Admin"):
-        st.markdown("**Password:**")
-        admin_password = st.text_input(
-            "Enter password",
-            type="password",
-            key="admin_password",
-            label_visibility="collapsed"
+        words = st.text_input(
+            "Flashcards",
+            placeholder="e.g., bucket, apple, maze, rabbit",
+            label_visibility="collapsed",
+            key="word_input",
+            on_change=None  # Will process on Enter
         )
+
+        # Start and Check buttons
+        col1, col2, col3 = st.columns([2, 1, 2])
         
-        if admin_password == "BCA@HaDong":
-            st.success("✅ Access Granted!")
-            
-            st.markdown("### 📤 Go to Upload Flashcard")
-            
-            drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
-            st.markdown(f"""
-                <a href="{drive_link}" target="_blank">
-                    <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
-                                   text-align: center; font-size: 16px; border: none; 
-                                   border-radius: 8px; cursor: pointer; width: 100%;">
-                        📤 Go to Upload Flashcard
-                    </button>
-                </a>
-            """, unsafe_allow_html=True)
+        with col1:
+            start_button = st.button("▶ Start", use_container_width=True, type="primary")
         
-        elif admin_password:
-            st.error("❌ Incorrect password!")
+        with col3:
+            check_button = st.button("🔍 Check", use_container_width=True)
+        
+        # Handle Start button or Enter key
+        if (start_button or (words and not check_button)) and words:
+            all_files = get_files_from_folder(FOLDER_ID)
 
-    # Process words when entered (on Enter key or after input)
-    if words and not check_button:
-        all_files = get_files_from_folder(FOLDER_ID)
+            # 파일명 매핑 (중복 허용)
+            file_map = {}
+            for f in all_files:
+                clean_name = clean_filename(f["name"])
+                if clean_name not in file_map:
+                    file_map[clean_name] = []
+                file_map[clean_name].append(f["id"])
 
-        # 파일명 매핑 (중복 허용)
-        file_map = {}
-        for f in all_files:
-            clean_name = clean_filename(f["name"])
-            if clean_name not in file_map:
-                file_map[clean_name] = []
-            file_map[clean_name].append(f["id"])
+            selected = []
+            for w in [w.strip().lower() for w in words.split(",")]:
+                if w in file_map:
+                    # 같은 단어의 모든 이미지 추가
+                    for file_id in file_map[w]:
+                        selected.append(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
 
-        selected = []
-        for w in [w.strip().lower() for w in words.split(",")]:
-            if w in file_map:
-                # 같은 단어의 모든 이미지 추가
-                for file_id in file_map[w]:
-                    selected.append(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
-
-        if selected:
-            st.session_state.cards = selected
-            st.session_state.mode = "gallery"
-            st.rerun()
-        else:
-            st.warning("⚠️ No matching flashcards found. Try again.")
+            if selected:
+                st.session_state.cards = selected
+                st.session_state.mode = "gallery"
+                st.rerun()
+            else:
+                st.warning("⚠️ No matching flashcards found. Try again.")
+        
+        # Handle Check button
+        if check_button and words:
+            all_files = get_files_from_folder(FOLDER_ID)
+            
+            # 파일명 매핑 (중복 허용)
+            file_map = {}
+            for f in all_files:
+                clean_name = clean_filename(f["name"])
+                if clean_name not in file_map:
+                    file_map[clean_name] = []
+                file_map[clean_name].append({
+                    "id": f["id"],
+                    "original_name": f["name"]
+                })
+            
+            input_words = [w.strip().lower() for w in words.split(",")]
+            found_words = []
+            not_found = []
+            
+            for word in input_words:
+                if word in file_map:
+                    found_words.append(f"{word} ({len(file_map[word])} cards)")
+                else:
+                    not_found.append(word)
+            
+            # 결과 표시
+            st.markdown("---")
+            if found_words:
+                st.success(f"✅ **Found ({len(found_words)} words):**")
+                st.write(", ".join(found_words))
+            
+            if not_found:
+                st.error(f"❌ **Not Found ({len(not_found)} words):**")
+                st.write(", ".join(not_found))
+                
+                # Copy button for missing words
+                missing_text = ", ".join(not_found)
+                st.code(missing_text, language=None)
+            
+            st.info("✨ Click **▶ Start** to load flashcards!")
+        
+        elif check_button and not words:
+            st.warning("⚠️ Please enter some words first.")
+        
+        # 🔐 Admin Section - Upload Only
+        st.markdown("---")
+        with st.expander("🔐 Admin (Upload)"):
+            st.markdown("**Password:**")
+            admin_password = st.text_input(
+                "Enter password",
+                type="password",
+                key="admin_password",
+                label_visibility="collapsed"
+            )
+            
+            if admin_password == "BCA@HaDong":
+                st.success("✅ Access Granted!")
+                
+                st.markdown("### 📤 Go to Upload Flashcard")
+                
+                drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
+                st.markdown(f"""
+                    <a href="{drive_link}" target="_blank">
+                        <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
+                                       text-align: center; font-size: 16px; border: none; 
+                                       border-radius: 8px; cursor: pointer; width: 100%;">
+                            📤 Go to Upload Flashcard
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
+            
+            elif admin_password:
+                st.error("❌ Incorrect password!")
+    
+    # ===== TAB 2: PHONICS GAMES =====
+    with tab2:
+        st.subheader("Level 1: Alphabet Recognition")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🎰 Letter Spinner", use_container_width=True, key="home_spinner"):
+                st.session_state.mode = "letter_spinner_setup"
+                st.rerun()
+        
+        with col2:
+            if st.button("🎯 Spot It!", use_container_width=True, key="home_spot"):
+                st.session_state.mode = "spot_it_setup"
+                st.rerun()
 
 
 # ==============================
@@ -397,21 +421,6 @@ elif st.session_state.mode == "gallery":
                 if st.session_state.selected_cards:
                     st.session_state.mode = "slap_setup"
                     st.rerun()
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📚 Phonics Games (Level 1)")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("🎰 Letter Spinner", use_container_width=True):
-                st.session_state.mode = "letter_spinner_setup"
-                st.rerun()
-        
-        with col2:
-            if st.button("🎯 Spot It!", use_container_width=True):
-                st.session_state.mode = "spot_it_setup"
-                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🏠 Home", use_container_width=True):
