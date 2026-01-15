@@ -366,18 +366,35 @@ elif st.session_state.mode == "slap_board":
             
             with cols[col_position]:
                 if card_idx in st.session_state.slap_answered:
-                    # Show trophy instead of card
-                    st.markdown("""
-                        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                            <div style="font-size: 50px;">🏆</div>
-                            <div style="color: white; font-size: 14px; font-weight: bold; margin-top: 5px;">Correct!</div>
+                    # Show trophy for correct answer
+                    st.markdown(f"""
+                        <div style="position: relative; text-align: center;">
+                            <img src="{url}" style="width: 100%; opacity: 0.3; border-radius: 10px;">
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                        width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
+                                        background: rgba(0, 255, 0, 0.2); display: flex; align-items: center; justify-content: center;">
+                                <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                elif st.session_state.selected_slap_card == card_idx:
+                    # Show selected card with blue circle overlay
+                    st.markdown(f"""
+                        <div style="position: relative;">
+                            <img src="{url}" style="width: 100%; border-radius: 10px;">
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                        width: 80%; height: 80%; border: 8px solid #FFD700; border-radius: 50%; 
+                                        background: rgba(255, 215, 0, 0.2); display: flex; align-items: center; justify-content: center;">
+                                <span style="color: #FFD700; font-size: 60px; font-weight: bold;">?</span>
+                            </div>
                         </div>
                     """, unsafe_allow_html=True)
                 else:
-                    # Display card image (same as gallery)
+                    # Display normal card
                     st.image(url, use_container_width=True)
-                    
-                    # Selection button below card
+                
+                # Selection button below card
+                if card_idx not in st.session_state.slap_answered:
                     if st.button(f"Card {card_idx + 1}", key=f"slap_card_{card_idx}", use_container_width=True):
                         st.session_state.selected_slap_card = card_idx
                         st.rerun()
@@ -385,7 +402,7 @@ elif st.session_state.mode == "slap_board":
         st.markdown("<br>", unsafe_allow_html=True)
         
         # Show Correct/Wrong buttons if a card is selected
-        if st.session_state.selected_slap_card is not None:
+        if st.session_state.selected_slap_card is not None and st.session_state.selected_slap_card not in st.session_state.slap_answered:
             st.info(f"✨ Card {st.session_state.selected_slap_card + 1} selected! Is it correct?")
             
             col1, col2, col3 = st.columns([1, 1, 2])
