@@ -49,10 +49,17 @@ def clean_filename(filename):
 def play_sound(sound_type):
     """소리 재생 함수"""
     if sound_type == "correct":
-        # 딩동댕 소리 - 성공음
+        # 딩동댕 소리 - 기본 성공음
         st.markdown("""
             <audio autoplay>
                 <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+    elif sound_type == "big_win":
+        # 더 신나는 성공음 - 슬랩더 보드, 메모리 게임용
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" type="audio/mpeg">
             </audio>
         """, unsafe_allow_html=True)
     elif sound_type == "wrong":
@@ -63,10 +70,24 @@ def play_sound(sound_type):
             </audio>
         """, unsafe_allow_html=True)
     elif sound_type == "celebration":
-        # 와아~ 축하 소리
+        # 와아~ 축하 소리 - 게임 완료
         st.markdown("""
             <audio autoplay>
                 <source src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+    elif sound_type == "spin":
+        # 스핀 중 소리
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+    elif sound_type == "stop":
+        # 스핀 멈출 때 소리
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://assets.mixkit.co/active_storage/sfx/1434/1434-preview.mp3" type="audio/mpeg">
             </audio>
         """, unsafe_allow_html=True)
 
@@ -407,7 +428,7 @@ elif st.session_state.mode == "slap_board":
                     with col_o:
                         if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True):
                             st.session_state.slap_answered.append(card_idx)
-                            play_sound("correct")
+                            play_sound("big_win")
                             st.rerun()
                     
                     with col_x:
@@ -617,7 +638,7 @@ elif st.session_state.mode == "memory_game":
                                     if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
                                         st.session_state.memory_matched.extend([idx1, idx2])
                                         st.session_state.memory_flipped = []
-                                        # Play correct sound immediately
+                                        # Play big win sound immediately
                                         st.session_state.play_match_sound = True
                                     else:
                                         # Wrong match - set waiting state to show both cards
@@ -627,7 +648,7 @@ elif st.session_state.mode == "memory_game":
     
     # Play match sound if needed
     if st.session_state.get("play_match_sound", False):
-        play_sound("correct")
+        play_sound("big_win")
         st.session_state.play_match_sound = False
     
     # Handle wrong match waiting period
@@ -825,6 +846,7 @@ elif st.session_state.mode == "letter_spinner":
     with col1:
         if st.button("🎲 Start Spin", use_container_width=True, type="primary", disabled=st.session_state.spinning):
             st.session_state.spinning = True
+            play_sound("spin")
             # Spin 10 times quickly
             for _ in range(10):
                 st.session_state.current_letter = random.choice(st.session_state.spinner_letters)
@@ -833,7 +855,7 @@ elif st.session_state.mode == "letter_spinner":
     with col2:
         if st.button("⏸ Stop", use_container_width=True, disabled=not st.session_state.spinning):
             st.session_state.spinning = False
-            play_sound("correct")
+            play_sound("stop")
             st.rerun()
     
     with col3:
@@ -942,62 +964,66 @@ elif st.session_state.mode == "spot_it_setup":
 # ==============================
 elif st.session_state.mode == "spot_it":
     st.title("🎯 Spot It!")
-    st.subheader("Find the letter the teacher calls!")
+    
+    # Teacher input for target letter
+    st.markdown("### 👨‍🏫 Teacher: Call out a letter!")
+    target_letter = st.text_input(
+        "Which letter should students find?",
+        placeholder="Type a letter (e.g., A, b, M)",
+        max_chars=1,
+        key="target_letter_input"
+    )
+    
+    if target_letter:
+        st.info(f"🎯 Target Letter: **{target_letter}**")
+    
+    st.markdown("---")
     
     if "spot_answered" not in st.session_state:
         st.session_state.spot_answered = []
     
-    # Display letters in grid (8 columns like gallery)
+    # Display letters in grid
     num_cards = len(st.session_state.spot_letters)
     num_cols = 8
-    empty_cols_before = (num_cols - num_cards) // 2
     
-    cols = st.columns(num_cols)
-    
-    for i, letter in enumerate(st.session_state.spot_letters):
-        col_position = empty_cols_before + i
+    # If more than 8 cards, split into 2 rows
+    if num_cards <= 8:
+        # Single row - center aligned
+        empty_cols_before = (num_cols - num_cards) // 2
+        cols = st.columns(num_cols)
         
-        with cols[col_position]:
-            if i in st.session_state.spot_answered:
-                # Show with green checkmark
-                st.markdown(f"""
-                    <div style="position: relative; text-align: center; height: 200px; 
-                                background: white; border-radius: 10px; 
-                                display: flex; align-items: center; justify-content: center;">
-                        <span style="color: #cccccc; font-size: 100px; font-weight: bold;">{letter}</span>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                                    width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
-                                    background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
-                            <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                # Display letter card
-                st.markdown(f"""
-                    <div style="text-align: center; height: 200px; 
-                                background: white; border-radius: 10px; 
-                                display: flex; align-items: center; justify-content: center;
-                                box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                        <span style="color: #333; font-size: 100px; font-weight: bold; font-family: Arial, sans-serif;">
-                            {letter}
-                        </span>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # O and X buttons
-                col_o, col_x = st.columns(2)
-                
-                with col_o:
-                    if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
-                        st.session_state.spot_answered.append(i)
-                        play_sound("correct")
-                        st.rerun()
-                
-                with col_x:
-                    if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
-                        play_sound("wrong")
-                        st.rerun()
+        for i, letter in enumerate(st.session_state.spot_letters):
+            col_position = empty_cols_before + i
+            
+            with cols[col_position]:
+                display_spot_letter(i, letter, st.session_state.spot_answered)
+    else:
+        # Two rows - split evenly
+        first_row_count = (num_cards + 1) // 2
+        second_row_count = num_cards - first_row_count
+        
+        # First row
+        empty_cols_before_1 = (num_cols - first_row_count) // 2
+        cols1 = st.columns(num_cols)
+        
+        for i in range(first_row_count):
+            col_position = empty_cols_before_1 + i
+            letter = st.session_state.spot_letters[i]
+            
+            with cols1[col_position]:
+                display_spot_letter(i, letter, st.session_state.spot_answered)
+        
+        # Second row
+        empty_cols_before_2 = (num_cols - second_row_count) // 2
+        cols2 = st.columns(num_cols)
+        
+        for j in range(second_row_count):
+            i = first_row_count + j
+            col_position = empty_cols_before_2 + j
+            letter = st.session_state.spot_letters[i]
+            
+            with cols2[col_position]:
+                display_spot_letter(i, letter, st.session_state.spot_answered)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -1008,13 +1034,6 @@ elif st.session_state.mode == "spot_it":
         if st.button("➡ Next Round", use_container_width=True):
             # Generate new random letters
             num_cards = len(st.session_state.spot_letters)
-            all_letters = list(set([l.upper() if l.isupper() else l for l in st.session_state.spot_letters]))
-            
-            # Recreate with same settings
-            st.session_state.spot_letters = random.sample(
-                st.session_state.spot_letters, 
-                min(num_cards, len(st.session_state.spot_letters))
-            )
             random.shuffle(st.session_state.spot_letters)
             st.session_state.spot_answered = []
             st.rerun()
@@ -1023,6 +1042,50 @@ elif st.session_state.mode == "spot_it":
         if st.button("⬅ Back to Gallery", use_container_width=True):
             st.session_state.mode = "gallery"
             st.rerun()
+
+
+def display_spot_letter(i, letter, spot_answered):
+    """Helper function to display a Spot It letter card"""
+    if i in spot_answered:
+        # Show with green checkmark
+        st.markdown(f"""
+            <div style="position: relative; text-align: center; height: 200px; 
+                        background: white; border-radius: 10px; 
+                        display: flex; align-items: center; justify-content: center;">
+                <span style="color: #cccccc; font-size: 100px; font-weight: bold;">{letter}</span>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                            width: 80%; height: 80%; border: 8px solid #00ff00; border-radius: 50%; 
+                            background: rgba(0, 255, 0, 0.3); display: flex; align-items: center; justify-content: center;">
+                    <span style="color: #00ff00; font-size: 60px; font-weight: bold;">✓</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        # Display letter card
+        st.markdown(f"""
+            <div style="text-align: center; height: 200px; 
+                        background: white; border-radius: 10px; 
+                        display: flex; align-items: center; justify-content: center;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                <span style="color: #333; font-size: 100px; font-weight: bold; font-family: Arial, sans-serif;">
+                    {letter}
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # O and X buttons
+        col_o, col_x = st.columns(2)
+        
+        with col_o:
+            if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
+                st.session_state.spot_answered.append(i)
+                play_sound("big_win")
+                st.rerun()
+        
+        with col_x:
+            if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
+                play_sound("wrong")
+                st.rerun()
 
 
 # ==============================
