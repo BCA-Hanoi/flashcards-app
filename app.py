@@ -293,7 +293,7 @@ elif st.session_state.mode == "gallery":
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("### 🎮 Games & Activities")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             if st.button("▶ Presentation", use_container_width=True):
@@ -307,6 +307,7 @@ elif st.session_state.mode == "gallery":
                     st.session_state.mode = "hide_seek"
                     st.session_state.current = 0
                     st.session_state.zoom_level = 1
+                    st.session_state.hide_seek_order = []
                     st.rerun()
         
         with col3:
@@ -314,21 +315,12 @@ elif st.session_state.mode == "gallery":
                 if len(st.session_state.selected_cards) >= 4:
                     st.session_state.mode = "memory_setup"
                     st.rerun()
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🎯 Slap the Board Game")
-        st.write("Select number of cards to show:")
         
-        slap_cols = st.columns(8)
-        
-        for i in range(8):
-            with slap_cols[i]:
-                if st.button(f"{i+1}", key=f"slap_{i+1}", use_container_width=True):
-                    if len(st.session_state.selected_cards) >= i+1:
-                        st.session_state.mode = "slap_board"
-                        st.session_state.game_cards = random.sample(st.session_state.selected_cards, i+1)
-                        st.session_state.slap_answered = []
-                        st.rerun()
+        with col4:
+            if st.button("🎯 Slap the Board", use_container_width=True):
+                if st.session_state.selected_cards:
+                    st.session_state.mode = "slap_setup"
+                    st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🏠 Home", use_container_width=True):
@@ -342,6 +334,20 @@ elif st.session_state.mode == "gallery":
 elif st.session_state.mode == "slap_board":
     st.title("🎯 Slap the Board!")
     st.subheader(f"Find the correct card! ({len(st.session_state.game_cards)} cards)")
+    
+    # Custom CSS to style buttons
+    st.markdown("""
+        <style>
+            /* Remove red background from all buttons in slap board */
+            div[data-testid="stHorizontalBlock"] button {
+                background-color: white !important;
+                color: black !important;
+            }
+            div[data-testid="stHorizontalBlock"] button:hover {
+                background-color: #f0f0f0 !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
     
     if "selected_slap_card" not in st.session_state:
         st.session_state.selected_slap_card = None
@@ -384,7 +390,7 @@ elif st.session_state.mode == "slap_board":
                     col_o, col_x = st.columns(2)
                     
                     with col_o:
-                        if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True, type="primary"):
+                        if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True):
                             st.session_state.slap_answered.append(card_idx)
                             play_sound("correct")
                             st.rerun()
@@ -411,6 +417,31 @@ elif st.session_state.mode == "slap_board":
                 st.session_state.mode = "gallery"
                 st.session_state.selected_slap_card = None
                 st.rerun()
+
+
+# ==============================
+# Slap the Board Setup
+# ==============================
+elif st.session_state.mode == "slap_setup":
+    st.title("🎯 Slap the Board Setup")
+    st.subheader("Select number of cards to show:")
+    
+    # Show 1-8 buttons in one row
+    cols = st.columns(8)
+    
+    for i in range(8):
+        with cols[i]:
+            if st.button(f"{i+1}", key=f"slap_{i+1}", use_container_width=True):
+                if len(st.session_state.selected_cards) >= i+1:
+                    st.session_state.mode = "slap_board"
+                    st.session_state.game_cards = random.sample(st.session_state.selected_cards, i+1)
+                    st.session_state.slap_answered = []
+                    st.rerun()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("⬅ Back to Gallery"):
+        st.session_state.mode = "gallery"
+        st.rerun()
 
 
 # ==============================
@@ -682,8 +713,15 @@ elif st.session_state.mode == "present":
 elif st.session_state.mode == "hide_seek":
     st.title("🔍 Hide & Seek - Guess the Card!")
     
-    if st.session_state.selected_cards:
-        current_card = st.session_state.selected_cards[st.session_state.current]
+    # Initialize random card order if not exists
+    if "hide_seek_order" not in st.session_state or len(st.session_state.hide_seek_order) == 0:
+        st.session_state.hide_seek_order = list(range(len(st.session_state.selected_cards)))
+        random.shuffle(st.session_state.hide_seek_order)
+        st.session_state.hide_seek_index = 0
+    
+    if st.session_state.selected_cards and st.session_state.hide_seek_index < len(st.session_state.hide_seek_order):
+        current_card_idx = st.session_state.hide_seek_order[st.session_state.hide_seek_index]
+        current_card = st.session_state.selected_cards[current_card_idx]
         
         # Zoom styles
         zoom_styles = {
@@ -712,7 +750,7 @@ elif st.session_state.mode == "hide_seek":
         
         with col2:
             if st.button("➡ Next Card", use_container_width=True):
-                st.session_state.current = (st.session_state.current + 1) % len(st.session_state.selected_cards)
+                st.session_state.hide_seek_index += 1
                 st.session_state.zoom_level = 1
                 st.rerun()
         
@@ -724,6 +762,7 @@ elif st.session_state.mode == "hide_seek":
         with col4:
             if st.button("⬅ Back", use_container_width=True):
                 st.session_state.mode = "gallery"
+                st.session_state.hide_seek_order = []
                 st.rerun()
 
 
