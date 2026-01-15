@@ -6,6 +6,26 @@ import re
 import base64
 
 # ==============================
+# 페이지 로드 시 사운드 재생 체크
+# ==============================
+if "pending_sound" in st.session_state and st.session_state.pending_sound:
+    sound_type = st.session_state.pending_sound
+    st.session_state.pending_sound = None
+    
+    # 소리 재생
+    sound_urls = {
+        "correct": "https://www.soundjay.com/buttons/sounds/button-09.mp3",
+        "wrong": "https://www.soundjay.com/buttons/sounds/button-10.mp3"
+    }
+    
+    if sound_type in sound_urls:
+        st.markdown(f"""
+            <audio autoplay>
+                <source src="{sound_urls[sound_type]}" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+
+# ==============================
 # Google Drive 연결 설정 (Secrets 사용)
 # ==============================
 creds = service_account.Credentials.from_service_account_info(
@@ -47,21 +67,8 @@ def clean_filename(filename):
 
 
 def play_sound(sound_type):
-    """소리 재생 함수"""
-    if sound_type == "correct":
-        # 딩동댕 소리 - 기본 성공음
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://www.soundjay.com/buttons/sounds/button-09.mp3" type="audio/mpeg">
-            </audio>
-        """, unsafe_allow_html=True)
-    elif sound_type == "wrong":
-        # 삑 소리 - 오답음
-        st.markdown("""
-            <audio autoplay>
-                <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3" type="audio/mpeg">
-            </audio>
-        """, unsafe_allow_html=True)
+    """소리 재생 함수 - Session State에 플래그 저장"""
+    st.session_state.pending_sound = sound_type
 
 
 def display_spot_letter(i, letter, spot_answered):
@@ -475,8 +482,8 @@ elif st.session_state.mode == "slap_board":
                     
                     with col_o:
                         if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True):
-                            play_sound("correct")
                             st.session_state.slap_answered.append(card_idx)
+                            play_sound("correct")
                             st.rerun()
                     
                     with col_x:
@@ -686,18 +693,12 @@ elif st.session_state.mode == "memory_game":
                                     if st.session_state.game_cards[idx1] == st.session_state.game_cards[idx2]:
                                         st.session_state.memory_matched.extend([idx1, idx2])
                                         st.session_state.memory_flipped = []
-                                        # Play big win sound immediately
-                                        st.session_state.play_match_sound = True
+                                        play_sound("correct")
                                     else:
                                         # Wrong match - set waiting state to show both cards
                                         st.session_state.memory_waiting = True
                                 
                                 st.rerun()
-    
-    # Play match sound if needed
-    if st.session_state.get("play_match_sound", False):
-        play_sound("correct")
-        st.session_state.play_match_sound = False
     
     # Handle wrong match waiting period
     if st.session_state.memory_waiting:
