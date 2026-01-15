@@ -47,30 +47,20 @@ def clean_filename(filename):
 
 
 def play_sound(sound_type):
-    """소리 재생 함수 - JavaScript로 직접 재생"""
-    sound_urls = {
-        "correct": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
-        "big_win": "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-        "wrong": "https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3",
-        "celebration": "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-        "spin": "https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3",
-        "stop": "https://assets.mixkit.co/active_storage/sfx/1434/1434-preview.mp3"
-    }
-    
-    if sound_type in sound_urls:
-        # JavaScript로 즉시 재생
-        st.markdown(f"""
-            <audio id="audio_{sound_type}" autoplay style="display:none;">
-                <source src="{sound_urls[sound_type]}" type="audio/mpeg">
+    """소리 재생 함수"""
+    if sound_type == "correct":
+        # 딩동댕 소리 - 기본 성공음
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://www.soundjay.com/buttons/sounds/button-09.mp3" type="audio/mpeg">
             </audio>
-            <script>
-                var audio = document.getElementById('audio_{sound_type}');
-                if (audio) {{
-                    audio.play().catch(function(error) {{
-                        console.log('Audio play failed:', error);
-                    }});
-                }}
-            </script>
+        """, unsafe_allow_html=True)
+    elif sound_type == "wrong":
+        # 삑 소리 - 오답음
+        st.markdown("""
+            <audio autoplay>
+                <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3" type="audio/mpeg">
+            </audio>
         """, unsafe_allow_html=True)
 
 
@@ -108,17 +98,13 @@ def display_spot_letter(i, letter, spot_answered):
         
         with col_o:
             if st.button("⭕", key=f"spot_correct_{i}", use_container_width=True):
-                play_sound("big_win")
-                import time
-                time.sleep(0.3)  # Give sound time to start
                 st.session_state.spot_answered.append(i)
+                play_sound("correct")
                 st.rerun()
         
         with col_x:
             if st.button("❌", key=f"spot_wrong_{i}", use_container_width=True):
                 play_sound("wrong")
-                import time
-                time.sleep(0.3)  # Give sound time to start
                 st.rerun()
 
 
@@ -197,7 +183,7 @@ if st.session_state.mode == "home":
         on_change=None  # Will process on Enter
     )
 
-    # ✅ Check Existing Words button
+    # ✅ Check Existing Words button - Available to everyone
     col1, col2 = st.columns([1, 3])
     
     with col1:
@@ -248,44 +234,32 @@ if st.session_state.mode == "home":
     elif not words and check_button:
         st.warning("⚠️ Please enter some words first.")
     
-    # 🔐 Admin Section
+    # 🔐 Admin Section - Always visible
     st.markdown("---")
-    with st.expander("🔐 Teacher Admin"):
+    with st.expander("🔐 Admin"):
+        st.markdown("**Password:**")
         admin_password = st.text_input(
-            "Admin Password:",
+            "Enter password",
             type="password",
-            key="admin_password"
+            key="admin_password",
+            label_visibility="collapsed"
         )
         
-        if admin_password == "BCA@Hadong":
+        if admin_password == "BCA@HaDong":
             st.success("✅ Access Granted!")
             
-            if missing_words:
-                st.markdown("### 📤 Upload Missing Words")
-                st.info(f"**Missing Words:** {', '.join(missing_words)}")
-                st.markdown("""
-                    **Instructions:**
-                    1. Click the button below to open Google Drive
-                    2. Upload images for the missing words
-                    3. Name files exactly as: `word.png` or `word.jpg`
-                    4. Come back and refresh to check again
-                """)
-                
-                drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
-                st.markdown(f"""
-                    <a href="{drive_link}" target="_blank">
-                        <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
-                                       text-align: center; font-size: 16px; border: none; 
-                                       border-radius: 8px; cursor: pointer; width: 100%;">
-                            📤 Open Google Drive Folder
-                        </button>
-                    </a>
-                """, unsafe_allow_html=True)
-            else:
-                if check_button:
-                    st.info("✅ No missing words! All flashcards are available.")
-                else:
-                    st.info("👆 Click 'Check Existing Words' first to see missing words.")
+            st.markdown("### 📤 Go to Upload Flashcard")
+            
+            drive_link = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
+            st.markdown(f"""
+                <a href="{drive_link}" target="_blank">
+                    <button style="background-color: #4CAF50; color: white; padding: 15px 32px; 
+                                   text-align: center; font-size: 16px; border: none; 
+                                   border-radius: 8px; cursor: pointer; width: 100%;">
+                        📤 Go to Upload Flashcard
+                    </button>
+                </a>
+            """, unsafe_allow_html=True)
         
         elif admin_password:
             st.error("❌ Incorrect password!")
@@ -501,17 +475,13 @@ elif st.session_state.mode == "slap_board":
                     
                     with col_o:
                         if st.button("⭕", key=f"correct_{card_idx}", use_container_width=True):
-                            play_sound("big_win")
-                            import time
-                            time.sleep(0.3)  # Give sound time to start
+                            play_sound("correct")
                             st.session_state.slap_answered.append(card_idx)
                             st.rerun()
                     
                     with col_x:
                         if st.button("❌", key=f"wrong_{card_idx}", use_container_width=True):
                             play_sound("wrong")
-                            import time
-                            time.sleep(0.3)  # Give sound time to start
                             st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -726,7 +696,7 @@ elif st.session_state.mode == "memory_game":
     
     # Play match sound if needed
     if st.session_state.get("play_match_sound", False):
-        play_sound("big_win")
+        play_sound("correct")
         st.session_state.play_match_sound = False
     
     # Handle wrong match waiting period
@@ -753,7 +723,7 @@ elif st.session_state.mode == "memory_game":
     # Check if game is complete
     if len(st.session_state.memory_matched) == len(st.session_state.game_cards):
         st.success("🎉 You found all pairs!")
-        play_sound("celebration")
+        play_sound("correct")
         st.balloons()
     
     st.markdown("<br>", unsafe_allow_html=True)
@@ -923,9 +893,6 @@ elif st.session_state.mode == "letter_spinner":
     
     with col1:
         if st.button("🎲 Start Spin", use_container_width=True, type="primary", disabled=st.session_state.spinning):
-            play_sound("spin")
-            import time
-            time.sleep(0.2)  # Give sound time to start
             st.session_state.spinning = True
             # Spin 10 times quickly
             for _ in range(10):
@@ -934,10 +901,8 @@ elif st.session_state.mode == "letter_spinner":
     
     with col2:
         if st.button("⏸ Stop", use_container_width=True, disabled=not st.session_state.spinning):
-            play_sound("stop")
-            import time
-            time.sleep(0.2)  # Give sound time to start
             st.session_state.spinning = False
+            play_sound("correct")
             st.rerun()
     
     with col3:
